@@ -30,11 +30,16 @@ export const useUserStore = defineStore('user', {
       this.error = null
       try {
         const response = await loginApi(email, password)
-        // Adjust according to your backend response structure
+        // Store all user fields, including doctor_id and patient_id
         this.user = response.data.data?.user || null
         this.token = response.data.data?.token || null
         if (this.token) {
           localStorage.setItem('auth_token', this.token)
+        }
+        // Defensive: ensure doctor_id and patient_id are always present
+        if (this.user) {
+          if (!('doctor_id' in this.user)) this.user.doctor_id = null
+          if (!('patient_id' in this.user)) this.user.patient_id = null
         }
         return response
       } catch (err) {

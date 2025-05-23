@@ -1,6 +1,10 @@
 <template>
   <DoctorLayout>
     <div class="flex flex-col gap-8 px-2 md:px-8 py-4">
+      <!-- Edit Availability Button -->
+      <div class="flex justify-end" v-if="doctorInfo">
+        <button class="btn btn-secondary" @click="openAvailabilityModal">Edit Availability</button>
+      </div>
       <!-- Doctor Info Card -->
       <div v-if="doctorInfo" class="card bg-primary text-primary-content shadow-xl mb-8 w-full">
         <div class="card-body">
@@ -9,8 +13,8 @@
           <div>
             <span class="font-bold">Availability:</span>
             <ul class="list-disc ml-6">
-              <li v-for="(slots, day) in parsedAvailability" :key="day">
-                <span class="capitalize">{{ day }}:</span> {{ slots.join(', ') }}
+              <li v-for="(entry, idx) in parsedAvailabilityArray" :key="idx">
+                <span class="capitalize">{{ entry.day }}:</span> {{ entry.start }}-{{ entry.end }}
               </li>
             </ul>
           </div>
@@ -122,6 +126,26 @@
           </div>
         </form>
       </dialog>
+      <!-- Edit Availability Modal -->
+      <dialog id="availability-modal" class="modal" :open="showAvailabilityModal">
+        <form method="dialog" class="modal-box" @submit.prevent="saveAvailability">
+          <h3 class="font-bold text-lg mb-4">Edit Availability</h3>
+          <div v-if="availabilityError" class="alert alert-error mb-2">{{ availabilityError }}</div>
+          <div v-if="availabilitySuccess" class="alert alert-success mb-2">{{ availabilitySuccess }}</div>
+          <div v-for="day in daysOfWeek" :key="day" class="mb-4">
+            <div class="font-bold mb-2">{{ capitalize(day) }}</div>
+            <div v-for="(range, idx) in tempAvailability[day]" :key="idx" class="flex items-center gap-2 mb-2">
+              <input v-model="tempAvailability[day][idx]" class="input input-bordered input-sm w-40" placeholder="e.g. 09:00-12:00" />
+              <button class="btn btn-xs btn-error" type="button" @click="removeRange(day, idx)">Remove</button>
+            </div>
+            <button class="btn btn-xs btn-success" type="button" @click="addRange(day)">Add Time Range</button>
+          </div>
+          <div class="modal-action">
+            <button class="btn" type="button" @click="closeAvailabilityModal">Cancel</button>
+            <button class="btn btn-primary" type="submit" :disabled="availabilityLoading">Save</button>
+          </div>
+        </form>
+      </dialog>
     </div>
   </DoctorLayout>
 </template>
@@ -130,7 +154,8 @@
 import { ref, onMounted, computed } from 'vue'
 import DoctorLayout from '../../layouts/DoctorLayout.vue'
 import { useUserStore } from '../../store/user'
-import { getDoctorAppointments, getDoctorQueue } from '../../services/api'
+import { getAppointments, getQueues } from '../../services/api'
+import api from '../../services/api'
 
 const appointments = ref([])
 const queue = ref([])
@@ -139,13 +164,22 @@ const loadingQueue = ref(true)
 const userStore = useUserStore()
 const doctorInfo = ref(null)
 const selectedPatient = ref(null)
+const showAvailabilityModal = ref(false)
+const tempAvailability = ref({})
+const daysOfWeek = [
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+]
+const availabilityLoading = ref(false)
+const availabilityError = ref('')
+const availabilitySuccess = ref('')
 
-const parsedAvailability = computed(() => {
-  if (!doctorInfo.value?.availability) return {}
+const parsedAvailabilityArray = computed(() => {
+  if (!doctorInfo.value?.availability) return []
   try {
-    return JSON.parse(doctorInfo.value.availability)
+    const avail = JSON.parse(doctorInfo.value.availability)
+    return Array.isArray(avail) ? avail : []
   } catch {
-    return {}
+    return []
   }
 })
 
@@ -157,12 +191,12 @@ function closePatientModal() {
 }
 
 onMounted(async () => {
-  const doctorId = userStore.user?.id
+  const doctorId = userStore.user?.doctor_id
   if (!doctorId) return
 
   // Fetch appointments
   try {
-    const apptRes = await getDoctorAppointments(doctorId)
+    const apptRes = await getAppointments({ doctorId })
     appointments.value = apptRes.data.data || []
     // Set doctor info from first appointment if available
     if (appointments.value.length > 0 && appointments.value[0].doctor) {
@@ -176,7 +210,7 @@ onMounted(async () => {
 
   // Fetch queue
   try {
-    const queueRes = await getDoctorQueue(doctorId)
+    const queueRes = await getQueues({ doctorId })
     queue.value = queueRes.data.data || []
   } catch (e) {
     queue.value = []
@@ -189,5 +223,63 @@ function statusClass(status) {
   if (status === 'scheduled') return 'badge badge-info'
   if (status === 'completed') return 'badge badge-success'
   return 'badge'
+}
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function openAvailabilityModal() {
+  // Deep clone current availability or start empty
+  tempAvailability.value = {}
+  for (const day of daysOfWeek) {
+    tempAvailability.value[day] = doctorInfo.value?.availability ? (JSON.parse(doctorInfo.value.availability)[day] || []) : []
+    // Ensure it's an array
+    if (!Array.isArray(tempAvailability.value[day])) tempAvailability.value[day] = []
+  }
+  showAvailabilityModal.value = true
+}
+
+function closeAvailabilityModal() {
+  showAvailabilityModal.value = false
+}
+
+function addRange(day) {
+  tempAvailability.value[day].push('')
+}
+
+function removeRange(day, idx) {
+  tempAvailability.value[day].splice(idx, 1)
+}
+
+async function saveAvailability() {
+  availabilityLoading.value = true
+  availabilityError.value = ''
+  availabilitySuccess.value = ''
+  try {
+    const doctorId = userStore.user?.doctor_id
+    if (!doctorId) throw new Error('No doctor ID')
+    // Build payload: flatten tempAvailability into array of {day, start, end}
+    const availabilityArr = []
+    for (const day of daysOfWeek) {
+      for (const range of tempAvailability.value[day]) {
+        if (range && range.includes('-')) {
+          const [start, end] = range.split('-').map(s => s.trim())
+          if (start && end) {
+            availabilityArr.push({ day: capitalize(day), start, end })
+          }
+        }
+      }
+    }
+    await api.put(`/doctors/${doctorId}`, { availability: availabilityArr })
+    availabilitySuccess.value = 'Availability updated!'
+    // Update doctorInfo in UI
+    doctorInfo.value.availability = JSON.stringify(availabilityArr)
+    closeAvailabilityModal()
+  } catch (e) {
+    availabilityError.value = e.response?.data?.message || 'Failed to update availability.'
+  } finally {
+    availabilityLoading.value = false
+  }
 }
 </script>

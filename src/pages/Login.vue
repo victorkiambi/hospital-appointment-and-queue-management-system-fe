@@ -42,6 +42,7 @@ const router = useRouter()
 const onSubmit = async () => {
   try {
     const response = await userStore.login(email.value, password.value)
+    // After login, userStore.user contains doctor_id and patient_id for downstream use
     const role = response?.data?.data?.user?.role
     if (role === 'admin') {
       router.push('/admin/dashboard')
