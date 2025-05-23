@@ -24,6 +24,13 @@ api.interceptors.request.use(config => {
   if (xsrfToken) {
     config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
   }
+
+  // Attach Bearer token from localStorage if available
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+
   return config;
 });
 
@@ -40,6 +47,14 @@ export async function register(name, email, password) {
 export async function forgotPassword(email) {
   await getCsrfCookie()
   return api.post('/forgot-password', { email })
+}
+
+export async function getDoctorAppointments(doctorId) {
+  return api.get(`/appointments?doctor_id=${doctorId}`)
+}
+
+export async function getDoctorQueue(doctorId) {
+  return api.get(`/queues?doctor_id=${doctorId}`)
 }
 
 // You can add register, logout, etc. here as needed

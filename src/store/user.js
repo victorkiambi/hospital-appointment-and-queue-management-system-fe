@@ -23,6 +23,7 @@ export const useUserStore = defineStore('user', {
     logout() {
       this.user = null
       this.token = null
+      localStorage.removeItem('auth_token')
     },
     async login(email, password) {
       this.loading = true
@@ -32,6 +33,9 @@ export const useUserStore = defineStore('user', {
         // Adjust according to your backend response structure
         this.user = response.data.data?.user || null
         this.token = response.data.data?.token || null
+        if (this.token) {
+          localStorage.setItem('auth_token', this.token)
+        }
         return response
       } catch (err) {
         this.error = err.response?.data?.message || 'Login failed'
