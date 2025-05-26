@@ -9,37 +9,82 @@
       </div>
       <!-- Appointments Table -->
       <Card title="Today's Appointments">
-        <div class="overflow-x-auto rounded shadow">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <div class="enhanced-table">
+          <table>
+            <thead>
               <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MRN</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Patient</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th class="table-actions">Actions</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-              <tr v-if="loadingAppointments">
-                <td :colspan="7" class="text-center py-8">Loading...</td>
+            <tbody>
+              <tr v-if="loadingAppointments" class="loading-row">
+                <td colspan="6">
+                  <div class="loading-content">
+                    <svg class="loading-spinner" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Loading appointments...</span>
+                  </div>
+                </td>
               </tr>
-              <tr v-else-if="appointments.length === 0">
-                <td :colspan="7" class="text-center py-8 text-gray-400">No appointments found</td>
+              <tr v-else-if="appointments.length === 0" class="empty-row">
+                <td colspan="6">
+                  <div class="empty-content">
+                    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6m-6 0l.5-3h5l.5 3" />
+                    </svg>
+                    <p class="text-sm font-medium">No appointments today</p>
+                    <p class="text-xs text-gray-400">Your schedule is clear for today</p>
+                  </div>
+                </td>
               </tr>
               <tr v-else v-for="appt in appointments" :key="appt.id">
-                <td>{{ format(parseISO(appt.scheduled_at.replace(' ', 'T')), 'yyyy-MM-dd') }}</td>
-                <td>{{ format(parseISO(appt.scheduled_at.replace(' ', 'T')), 'HH:mm') }}</td>
-                <td>{{ appt.patient?.user?.name || '-' }}</td>
-                <td>{{ appt.patient?.user?.email || '-' }}</td>
-                <td>{{ appt.patient?.medical_record_number || '-' }}</td>
-                <td><span :class="statusClass(appt.status)">{{ appt.status }}</span></td>
                 <td>
-                  <Button size="sm" variant="secondary" @click="showPatientModal(appt.patient)">Details</Button>
-                  <Button size="sm" variant="success" v-if="appt.status === 'scheduled'">Start</Button>
-                  <Button size="sm" variant="secondary" disabled v-else>Done</Button>
+                  <div class="table-cell-primary">
+                    {{ formatDateTime(appt.scheduled_at, 'dd MMM yyyy') }}
+                  </div>
+                </td>
+                <td>
+                  <div class="table-cell-secondary font-mono">
+                    {{ formatDateTime(appt.scheduled_at, 'HH:mm') }}
+                  </div>
+                </td>
+                <td>
+                  <div class="table-cell-primary">
+                    {{ appt.patient?.user?.name || '-' }}
+                  </div>
+                  <div class="table-cell-secondary text-xs">
+                    MRN: {{ appt.patient?.medical_record_number || 'N/A' }}
+                  </div>
+                </td>
+                <td>
+                  <div class="table-cell-secondary text-sm">
+                    {{ appt.patient?.user?.email || '-' }}
+                  </div>
+                </td>
+                <td>
+                  <span :class="getEnhancedStatusClass(appt.status)">
+                    {{ appt.status }}
+                  </span>
+                </td>
+                <td class="table-actions">
+                  <div>
+                    <Button size="sm" variant="secondary" @click="showPatientModal(appt.patient)">
+                      Details
+                    </Button>
+                    <Button size="sm" variant="success" v-if="appt.status === 'scheduled'">
+                      Start
+                    </Button>
+                    <Button size="sm" variant="secondary" disabled v-else>
+                      Done
+                    </Button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -73,16 +118,20 @@
                 <td>{{ entry.patient?.user?.email || '-' }}</td>
                 <td>{{ entry.patient?.medical_record_number || '-' }}</td>
                 <td><span :class="statusClass(entry.status)">{{ entry.status }}</span></td>
-                <td>
-                  <Button size="sm" variant="secondary" @click="showPatientModal(entry.patient)">Details</Button>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    @click="handleCallPatient(entry)"
-                    :disabled="entry.status !== 'waiting'"
-                  >
-                    Call
-                  </Button>
+                <td class="table-actions">
+                  <div>
+                    <Button size="sm" variant="secondary" @click="showPatientModal(entry.patient)">
+                      Details
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      @click="handleCallPatient(entry)"
+                      :disabled="entry.status !== 'waiting'"
+                    >
+                      {{ entry.status === 'waiting' ? 'Call Next' : 'Called' }}
+                    </Button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -97,8 +146,8 @@
           <p><span class="font-bold">Medical Record #:</span> {{ selectedPatient.medical_record_number || '-' }}</p>
           <p><span class="font-bold">User ID:</span> {{ selectedPatient.user_id || '-' }}</p>
           <p><span class="font-bold">Patient ID:</span> {{ selectedPatient.id || '-' }}</p>
-          <p><span class="font-bold">Created At:</span> {{ selectedPatient.created_at || '-' }}</p>
-          <p><span class="font-bold">Updated At:</span> {{ selectedPatient.updated_at || '-' }}</p>
+          <p><span class="font-bold">Created At:</span> {{ formatDateTime(selectedPatient.created_at, 'PPpp') }}</p>
+          <p><span class="font-bold">Updated At:</span> {{ formatDateTime(selectedPatient.updated_at, 'PPpp') }}</p>
         </div>
         <template #actions>
           <Button @click="closePatientModal">Close</Button>
@@ -132,13 +181,13 @@ import DoctorLayout from '../../layouts/DoctorLayout.vue'
 import { useUserStore } from '../../store/user'
 import { getAppointments, getQueues, callPatient } from '../../services/api'
 import api from '../../services/api'
-import { format, parseISO } from 'date-fns'
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import Modal from '@/components/Modal.vue'
 import Notification from '@/components/Notification.vue'
 import TextInput from '@/components/TextInput.vue'
 import { useQueueEvents } from '@/utils/useQueueEvents'
+import { formatDateTime } from '@/utils/format'
 
 useQueueEvents()
 
@@ -245,6 +294,18 @@ function statusClass(status) {
   if (status === 'scheduled') return 'badge badge-info'
   if (status === 'completed') return 'badge badge-success'
   return 'badge'
+}
+
+function getEnhancedStatusClass(status) {
+  const baseClass = 'status-badge'
+  switch (status) {
+    case 'scheduled': return `${baseClass} scheduled`
+    case 'waiting': return `${baseClass} waiting`
+    case 'called': return `${baseClass} called`
+    case 'completed': return `${baseClass} completed`
+    case 'cancelled': return `${baseClass} cancelled`
+    default: return baseClass
+  }
 }
 
 function capitalize(str) {

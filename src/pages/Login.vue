@@ -38,12 +38,15 @@ const email = ref('')
 const password = ref('')
 const userStore = useUserStore()
 const router = useRouter()
+const loading = ref(false)
+const error = ref('')
 
 const onSubmit = async () => {
+  loading.value = true
+  error.value = ''
   try {
     const response = await userStore.login(email.value, password.value)
-    // After login, userStore.user contains doctor_id and patient_id for downstream use
-    const role = response?.data?.data?.user?.role
+    const role = response?.data?.data?.user?.role || userStore.user?.role
     if (role === 'admin') {
       router.push('/admin/dashboard')
     } else if (role === 'doctor') {
@@ -54,10 +57,9 @@ const onSubmit = async () => {
       router.push('/')
     }
   } catch (err) {
-    // error handled in store
+    error.value = err.response?.data?.message || err.message || 'Login failed.'
+  } finally {
+    loading.value = false
   }
 }
-
-const loading = computed(() => userStore.loading)
-const error = computed(() => userStore.error)
 </script> 

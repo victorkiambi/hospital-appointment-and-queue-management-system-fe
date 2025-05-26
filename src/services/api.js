@@ -1,51 +1,30 @@
 import axios from 'axios'
+import { getToken } from '../utils/token'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api/v1', // Update to your backend API base URL
-  withCredentials: true, // Needed for Sanctum/cookie auth
+  baseURL: import.meta.env.VITE_API_BASE_URL + '/api/v1',
+  // Removed withCredentials for token-based auth
 })
 
-// Helper to get CSRF cookie from Laravel Sanctum
-async function getCsrfCookie() {
-  // This must use the backend root, not /api
-  await axios.get('http://localhost:8000/sanctum/csrf-cookie', { withCredentials: true })
-}
-
-// Helper to get a cookie value by name
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-}
-
-// Set X-XSRF-TOKEN header for all requests if cookie is present
+// Add Authorization header if token is present
 api.interceptors.request.use(config => {
-  const xsrfToken = getCookie('XSRF-TOKEN');
-  if (xsrfToken) {
-    config.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfToken);
-  }
-
-  // Attach Bearer token from localStorage if available
-  const token = localStorage.getItem('auth_token');
+  const token = getToken();
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
-
   return config;
 });
 
 export async function login(email, password) {
-  await getCsrfCookie()
+  // No CSRF needed for token-based auth
   return api.post('/login', { email, password })
 }
 
 export async function register(name, email, password) {
-  await getCsrfCookie()
   return api.post('/register', { name, email, password })
 }
 
 export async function forgotPassword(email) {
-  await getCsrfCookie()
   return api.post('/forgot-password', { email })
 }
 
@@ -77,6 +56,13 @@ export async function getStats() {
 
 export async function createDoctor({ name, email, password, specialization, availability }) {
   return api.post('/admin/users/doctor', { name, email, password, specialization, availability });
+}
+
+export async function callPatient(queueId) {
+  return api.patch(`/queues/${queueId}`, {
+    status: 'called',
+    called_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+  });
 }
 
 // You can add register, logout, etc. here as needed

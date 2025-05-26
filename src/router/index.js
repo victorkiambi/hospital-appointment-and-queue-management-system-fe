@@ -27,6 +27,18 @@ const routes = [
     meta: { requiresAuth: true, role: 'patient' },
   },
   {
+    path: '/doctor/profile',
+    name: 'DoctorProfile',
+    component: () => import('../pages/doctor/Profile.vue'),
+    meta: { requiresAuth: true, role: 'doctor' },
+  },
+  {
+    path: '/patient/profile',
+    name: 'PatientProfile',
+    component: () => import('../pages/patient/Profile.vue'),
+    meta: { requiresAuth: true, role: 'patient' },
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('../pages/Login.vue'),
@@ -49,10 +61,15 @@ const router = createRouter({
 })
 
 // Global route guard for authentication and role-based access
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const publicPages = ['/login', '/register', '/forgot-password']
   const requiresAuth = to.meta.requiresAuth
   const userStore = useUserStore()
+
+  // Wait for restoreSession to complete if not ready
+  if (!userStore.ready) {
+    await userStore.restoreSession()
+  }
 
   if (requiresAuth && !userStore.isAuthenticated) {
     return next('/login')

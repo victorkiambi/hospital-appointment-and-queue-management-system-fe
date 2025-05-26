@@ -3,36 +3,86 @@
     <div class="flex flex-col gap-8 px-2 md:px-8 py-4">
       <!-- Book Appointment Button -->
       <div class="flex justify-end">
-        <Button variant="primary" @click="openBookingModal">Book Appointment</Button>
+        <Button variant="primary" @click="openBookingModal">
+          Book Appointment
+        </Button>
       </div>
       <!-- Appointments Table -->
       <Card title="My Appointments">
-        <div class="overflow-x-auto rounded shadow">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <div class="enhanced-table">
+          <table>
+            <thead>
               <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Doctor</th>
+                <th>Status</th>
+                <th class="table-actions">Actions</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-              <tr v-if="loadingAppointments">
-                <td :colspan="5" class="text-center py-8">Loading...</td>
+            <tbody>
+              <tr v-if="loadingAppointments" class="loading-row">
+                <td colspan="5">
+                  <div class="loading-content">
+                    <svg class="loading-spinner" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Loading appointments...</span>
+                  </div>
+                </td>
               </tr>
-              <tr v-else-if="appointments.length === 0">
-                <td :colspan="5" class="text-center py-8 text-gray-400">No appointments found</td>
+              <tr v-else-if="appointments.length === 0" class="empty-row">
+                <td colspan="5">
+                  <div class="empty-content">
+                    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6m-6 0l.5-3h5l.5 3" />
+                    </svg>
+                    <p class="text-sm font-medium">No appointments scheduled</p>
+                    <p class="text-xs text-gray-400">Book your first appointment to get started</p>
+                  </div>
+                </td>
               </tr>
               <tr v-else v-for="appt in appointments" :key="appt.id">
-                <td>{{ format(parseISO(appt.scheduled_at.replace(' ', 'T')), 'yyyy-MM-dd') }}</td>
-                <td>{{ format(parseISO(appt.scheduled_at.replace(' ', 'T')), 'HH:mm') }}</td>
-                <td>{{ appt.doctor?.user?.name || '-' }}</td>
-                <td><span :class="statusClass(appt.status)">{{ appt.status }}</span></td>
                 <td>
-                  <Button size="sm" variant="secondary" @click="showDoctorModal(appt.doctor)">Doctor</Button>
-                  <Button size="sm" variant="danger" v-if="appt.status === 'scheduled'">Cancel</Button>
+                  <div class="table-cell-primary">
+                    {{ formatDateTime(appt.scheduled_at, 'EEEE dd MMMM yyyy') }}
+                  </div>
+                </td>
+                <td>
+                  <div class="table-cell-secondary">
+                    {{ formatDateTime(appt.scheduled_at, 'h:mm a') }}
+                  </div>
+                </td>
+                <td>
+                  <div class="table-cell-primary">
+                    {{ appt.doctor?.user?.name || '-' }}
+                  </div>
+                  <div class="table-cell-secondary text-xs">
+                    {{ appt.doctor?.specialization || '' }}
+                  </div>
+                </td>
+                <td>
+                  <span :class="getEnhancedStatusClass(appt.status)">
+                    {{ appt.status }}
+                  </span>
+                </td>
+                <td class="table-actions">
+                  <div class="flex gap-2">
+                    <Button size="sm" variant="secondary" @click="showDoctorModal(appt.doctor)">
+                      Doctor Info
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="danger" 
+                      v-if="appt.status === 'scheduled'"
+                      :loading="cancellingAppointments.has(appt.id)"
+                      :disabled="cancellingAppointments.has(appt.id)"
+                      @click="cancelAppointment(appt)"
+                    >
+                      {{ cancellingAppointments.has(appt.id) ? 'Cancelling...' : 'Cancel' }}
+                    </Button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -107,10 +157,40 @@
           :options="slotOptions"
           placeholder="Select a time slot"
         />
+        <!-- Show formatted date and time if both are selected -->
+        <div v-if="selectedDate && selectedSlot" class="my-4 p-3 bg-gray-50 rounded border flex flex-col gap-1">
+          <div><span class="font-semibold">Selected Date:</span> {{ formatDateTime(selectedDate, 'EEEE dd MMMM yyyy') }}</div>
+          <div><span class="font-semibold">Selected Time:</span> {{ formatDateTime(selectedDate + 'T' + selectedSlot, 'h:mm a') }}</div>
+        </div>
         <template #actions>
           <Button variant="secondary" type="button" @click="closeBookingModal">Cancel</Button>
-          <Button variant="primary" type="submit" :loading="bookingLoading" :disabled="!selectedDoctorId || !selectedDate || !selectedSlot || bookingLoading" @click="submitBooking">
+          <Button variant="primary" type="button" :loading="bookingLoading" :disabled="!selectedDoctorId || !selectedDate || !selectedSlot || bookingLoading" @click="submitBooking">
             Book
+          </Button>
+        </template>
+      </Modal>
+      <!-- Cancel Confirmation Modal -->
+      <Modal :visible="!!appointmentToCancel" title="Cancel Appointment" @close="closeCancelModal">
+        <div v-if="appointmentToCancel">
+          <p class="mb-4">Are you sure you want to cancel this appointment?</p>
+          <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+            <p><span class="font-semibold">Doctor:</span> {{ appointmentToCancel.doctor?.user?.name }}</p>
+            <p><span class="font-semibold">Date:</span> {{ formatDateTime(appointmentToCancel.scheduled_at, 'EEEE dd MMMM yyyy') }}</p>
+            <p><span class="font-semibold">Time:</span> {{ formatDateTime(appointmentToCancel.scheduled_at, 'h:mm a') }}</p>
+          </div>
+          <p class="text-sm text-gray-600 mt-4">This action cannot be undone.</p>
+        </div>
+        <template #actions>
+          <Button variant="secondary" @click="closeCancelModal" :disabled="cancelLoading">
+            Keep Appointment
+          </Button>
+          <Button 
+            variant="danger" 
+            @click="confirmCancelAppointment" 
+            :loading="cancelLoading"
+            :disabled="cancelLoading"
+          >
+            {{ cancelLoading ? 'Cancelling...' : 'Yes, Cancel Appointment' }}
           </Button>
         </template>
       </Modal>
@@ -119,6 +199,19 @@
         type="info"
         :message="calledNotification"
         @close="calledNotification = ''"
+      />
+      <!-- Cancel Success/Error Notifications -->
+      <Notification
+        v-if="cancelSuccess"
+        type="success"
+        :message="cancelSuccess"
+        @close="cancelSuccess = ''"
+      />
+      <Notification
+        v-if="cancelError"
+        type="error"
+        :message="cancelError"
+        @close="cancelError = ''"
       />
     </div>
   </PatientLayout>
@@ -130,7 +223,7 @@ import PatientLayout from '../../layouts/PatientLayout.vue'
 import { useUserStore } from '../../store/user'
 import { getAppointments, getQueues } from '../../services/api'
 import api from '../../services/api'
-import { format, addDays, parseISO } from 'date-fns'
+import { addDays, format, parseISO } from 'date-fns'
 import Card from '@/components/Card.vue'
 import Table from '@/components/Table.vue'
 import Button from '@/components/Button.vue'
@@ -138,6 +231,7 @@ import Modal from '@/components/Modal.vue'
 import Notification from '@/components/Notification.vue'
 import Select from '@/components/Select.vue'
 import { useQueueEvents } from '@/utils/useQueueEvents'
+import { formatDateTime } from '@/utils/format'
 
 const calledNotification = ref('')
 
@@ -164,6 +258,18 @@ const availableSlots = ref([])
 const bookingLoading = ref(false)
 const bookingError = ref('')
 const bookingSuccess = ref('')
+
+// Cancel appointment state
+const appointmentToCancel = ref(null)
+const cancelLoading = ref(false)
+const cancelSuccess = ref('')
+const cancelError = ref('')
+const cancellingAppointments = ref(new Set())
+
+// Add flags to prevent duplicate calls
+const fetchingDoctors = ref(false)
+const fetchingAppointments = ref(false)
+
 const patientInfo = computed(() => userStore.user)
 
 const appointmentColumns = [
@@ -218,26 +324,123 @@ function closeDoctorModal() {
 }
 
 function openBookingModal() {
-  showBooking.value = true
-  bookingError.value = ''
-  bookingSuccess.value = ''
-  selectedDoctorId.value = ''
-  selectedDate.value = ''
-  selectedSlot.value = ''
-  availableDays.value = []
-  availableSlots.value = []
-  fetchDoctors()
+  console.log('openBookingModal called');
+  showBooking.value = true;
+  bookingError.value = '';
+  bookingSuccess.value = '';
+  selectedDoctorId.value = '';
+  selectedDate.value = '';
+  selectedSlot.value = '';
+  availableDays.value = [];
+  availableSlots.value = [];
+  
+  // Only fetch doctors if we don't have them already or if not currently fetching
+  if (doctors.value.length === 0 && !fetchingDoctors.value) {
+    fetchDoctors();
+  }
 }
 function closeBookingModal() {
   showBooking.value = false
 }
 
-async function fetchDoctors() {
+// Cancel appointment functions
+function cancelAppointment(appointment, event) {
+  // Prevent event propagation and default behavior
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  // Prevent duplicate calls if modal is already open
+  if (appointmentToCancel.value?.id === appointment.id) {
+    console.log('Cancel modal already open for this appointment, ignoring duplicate call');
+    return;
+  }
+  
+  console.log('Cancel appointment clicked:', appointment);
+  appointmentToCancel.value = appointment;
+  cancelError.value = '';
+  cancelSuccess.value = '';
+}
+
+function closeCancelModal() {
+  appointmentToCancel.value = null;
+  cancelError.value = '';
+}
+
+async function fetchQueue(patientId) {
+  loadingQueue.value = true;
   try {
-    const res = await api.get('/doctors')
-    doctors.value = res.data.data || []
+    const queueRes = await getQueues({ patientId });
+    queueEntries.value = queueRes.data.data || [];
   } catch (e) {
-    doctors.value = []
+    console.error('[Patient Dashboard] Error fetching queues:', e);
+    queueEntries.value = [];
+  } finally {
+    loadingQueue.value = false;
+  }
+}
+
+async function confirmCancelAppointment() {
+  if (!appointmentToCancel.value) return;
+  const appointment = appointmentToCancel.value;
+  cancelLoading.value = true;
+  cancellingAppointments.value.add(appointment.id);
+  try {
+    console.log('Cancelling appointment:', appointment.id);
+    await api.delete(`/appointments/${appointment.id}`);
+    cancelSuccess.value = `Appointment with Dr. ${appointment.doctor?.user?.name} has been cancelled successfully.`;
+    // Refresh appointments and queue
+    const patientId = patientInfo.value?.patient?.id;
+    if (patientId) {
+      await fetchAppointments(patientId);
+      await fetchQueue(patientId);
+    }
+    closeCancelModal();
+  } catch (e) {
+    console.error('Error cancelling appointment:', e);
+    cancelError.value = 'Failed to cancel appointment. Please try again later.';
+  } finally {
+    cancelLoading.value = false;
+    cancellingAppointments.value.delete(appointment.id);
+  }
+}
+
+async function fetchDoctors() {
+  if (fetchingDoctors.value) {
+    console.log('Already fetching doctors, skipping...');
+    return;
+  }
+  
+  console.log('fetchDoctors called');
+  fetchingDoctors.value = true;
+  
+  try {
+    const res = await api.get('/doctors');
+    doctors.value = res.data.data || [];
+  } catch (e) {
+    doctors.value = [];
+  } finally {
+    fetchingDoctors.value = false;
+  }
+}
+
+async function fetchAppointments(patientId) {
+  if (fetchingAppointments.value) {
+    console.log('Already fetching appointments, skipping...');
+    return;
+  }
+  
+  fetchingAppointments.value = true;
+  
+  try {
+    const apptRes = await getAppointments({ patientId });
+    appointments.value = apptRes.data.data || [];
+  } catch (e) {
+    console.error('[Patient Dashboard] Error fetching appointments:', e);
+    appointments.value = [];
+  } finally {
+    fetchingAppointments.value = false;
   }
 }
 
@@ -336,13 +539,21 @@ async function submitBooking() {
       scheduled_at
     })
     bookingSuccess.value = 'Appointment booked successfully!'
-    // Refresh appointments
+    // Refresh appointments and queue
     const patientId = patientInfo.value?.patient?.id
-    const apptRes = await getAppointments({ patientId })
-    appointments.value = apptRes.data.data || []
+    if (patientId) {
+      await fetchAppointments(patientId)
+      await fetchQueue(patientId)
+    }
     closeBookingModal()
   } catch (e) {
-    bookingError.value = e.response?.data?.message || 'Booking failed.'
+    // Enhanced error handling for API error structure
+    let msg = e.response?.data?.message || 'Booking failed.'
+    if (e.response?.data?.errors) {
+      const errorList = Object.values(e.response.data.errors).flat()
+      msg += ' ' + errorList.join(' ')
+    }
+    bookingError.value = msg
   } finally {
     bookingLoading.value = false
   }
@@ -360,24 +571,14 @@ watch(
       return;
     }
 
-    // Fetch appointments
-    try {
-      console.log('[Patient Dashboard] Fetching appointments for patientId:', patientId);
-      const apptRes = await getAppointments({ patientId });
-      console.log('[Patient Dashboard] Appointments API response:', apptRes.data);
-      appointments.value = apptRes.data.data || [];
-    } catch (e) {
-      console.error('[Patient Dashboard] Error fetching appointments:', e);
-      appointments.value = [];
-    } finally {
-      loadingAppointments.value = false;
-    }
+    // Fetch appointments using the new function with duplicate prevention
+    loadingAppointments.value = true;
+    await fetchAppointments(patientId);
+    loadingAppointments.value = false;
 
     // Fetch queue
     try {
-      console.log('[Patient Dashboard] Fetching queues for patientId:', patientId);
       const queueRes = await getQueues({ patientId });
-      console.log('[Patient Dashboard] Queues API response:', queueRes.data);
       queueEntries.value = queueRes.data.data || [];
     } catch (e) {
       console.error('[Patient Dashboard] Error fetching queues:', e);
@@ -393,6 +594,18 @@ function statusClass(status) {
   if (status === 'scheduled' || status === 'waiting') return 'badge badge-info'
   if (status === 'completed' || status === 'called') return 'badge badge-success'
   return 'badge'
+}
+
+function getEnhancedStatusClass(status) {
+  const baseClass = 'status-badge'
+  switch (status) {
+    case 'scheduled': return `${baseClass} scheduled`
+    case 'waiting': return `${baseClass} waiting`
+    case 'called': return `${baseClass} called`
+    case 'completed': return `${baseClass} completed`
+    case 'cancelled': return `${baseClass} cancelled`
+    default: return baseClass
+  }
 }
 
 function parseAvailabilityArray(availStr) {
