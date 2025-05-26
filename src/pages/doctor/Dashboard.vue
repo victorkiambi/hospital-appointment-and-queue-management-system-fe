@@ -1,168 +1,154 @@
 <template>
   <DoctorLayout>
-    <div class="flex flex-col gap-8 px-2 md:px-8 py-4">
+    <div v-if="!userStore.ready" class="py-12 text-center text-gray-400">Loading dashboard...</div>
+    <div v-else-if="!userStore.user" class="py-12 text-center text-gray-400">Redirecting...</div>
+    <div v-else class="flex flex-col gap-8 px-2 md:px-8 py-4">
       <!-- Edit Availability Button -->
       <div class="flex justify-end" v-if="doctorInfo">
-        <button class="btn btn-secondary" @click="openAvailabilityModal">Edit Availability</button>
+        <Button variant="secondary" @click="openAvailabilityModal">Edit Availability</Button>
       </div>
-      <!-- Doctor Info Card -->
-      <div v-if="doctorInfo" class="card bg-primary text-primary-content shadow-xl mb-8 w-full">
-        <div class="card-body">
-          <h2 class="card-title text-2xl">Dr. {{ doctorInfo.user?.name || '-' }}</h2>
-          <p><span class="font-bold">Specialization:</span> {{ doctorInfo.specialization || '-' }}</p>
-          <div>
-            <span class="font-bold">Availability:</span>
-            <ul class="list-disc ml-6">
-              <li v-for="(entry, idx) in parsedAvailabilityArray" :key="idx">
-                <span class="capitalize">{{ entry.day }}:</span> {{ entry.start }}-{{ entry.end }}
-              </li>
-            </ul>
-          </div>
+      <!-- Appointments Table -->
+      <Card title="Today's Appointments">
+        <div class="overflow-x-auto rounded shadow">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MRN</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+              <tr v-if="loadingAppointments">
+                <td :colspan="7" class="text-center py-8">Loading...</td>
+              </tr>
+              <tr v-else-if="appointments.length === 0">
+                <td :colspan="7" class="text-center py-8 text-gray-400">No appointments found</td>
+              </tr>
+              <tr v-else v-for="appt in appointments" :key="appt.id">
+                <td>{{ format(parseISO(appt.scheduled_at.replace(' ', 'T')), 'yyyy-MM-dd') }}</td>
+                <td>{{ format(parseISO(appt.scheduled_at.replace(' ', 'T')), 'HH:mm') }}</td>
+                <td>{{ appt.patient?.user?.name || '-' }}</td>
+                <td>{{ appt.patient?.user?.email || '-' }}</td>
+                <td>{{ appt.patient?.medical_record_number || '-' }}</td>
+                <td><span :class="statusClass(appt.status)">{{ appt.status }}</span></td>
+                <td>
+                  <Button size="sm" variant="secondary" @click="showPatientModal(appt.patient)">Details</Button>
+                  <Button size="sm" variant="success" v-if="appt.status === 'scheduled'">Start</Button>
+                  <Button size="sm" variant="secondary" disabled v-else>Done</Button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-      <!-- Appointments and Queue Panels -->
-      <div class="flex flex-col gap-8 w-full">
-        <!-- Appointments Table -->
-        <div class="card bg-base-100 shadow-xl w-full">
-          <div class="card-body">
-            <h2 class="card-title mb-4">Today's Appointments</h2>
-            <div class="overflow-x-auto">
-              <div v-if="loadingAppointments" class="flex justify-center items-center py-8">
-                <span class="loading loading-spinner loading-md"></span>
-              </div>
-              <table v-else class="table table-zebra w-full min-w-[700px]">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Patient</th>
-                    <th>Email</th>
-                    <th>MRN</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="appt in appointments" :key="appt.id">
-                    <td>{{ appt.scheduled_at ? appt.scheduled_at.split(' ')[0] : '-' }}</td>
-                    <td>{{ appt.scheduled_at ? appt.scheduled_at.split(' ')[1] : '-' }}</td>
-                    <td>{{ appt.patient?.user?.name || '-' }}</td>
-                    <td>{{ appt.patient?.user?.email || '-' }}</td>
-                    <td>{{ appt.patient?.medical_record_number || '-' }}</td>
-                    <td>
-                      <span :class="statusClass(appt.status)">{{ appt.status }}</span>
-                    </td>
-                    <td>
-                      <button class="btn btn-xs btn-info mr-1" @click="showPatientModal(appt.patient)">Details</button>
-                      <button class="btn btn-xs btn-success" v-if="appt.status === 'scheduled'">Start</button>
-                      <button class="btn btn-xs btn-disabled" v-else disabled>Done</button>
-                    </td>
-                  </tr>
-                  <tr v-if="appointments.length === 0">
-                    <td colspan="7" class="text-center text-gray-400">No appointments found</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+      </Card>
+      <!-- Queue Table -->
+      <Card title="Current Queue">
+        <div class="overflow-x-auto rounded shadow">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MRN</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+              <tr v-if="loadingQueue">
+                <td :colspan="6" class="text-center py-8">Loading...</td>
+              </tr>
+              <tr v-else-if="queue.length === 0">
+                <td :colspan="6" class="text-center py-8 text-gray-400">No queue entries found</td>
+              </tr>
+              <tr v-else v-for="entry in queue" :key="entry.id">
+                <td>{{ entry.position }}</td>
+                <td>{{ entry.patient?.user?.name || '-' }}</td>
+                <td>{{ entry.patient?.user?.email || '-' }}</td>
+                <td>{{ entry.patient?.medical_record_number || '-' }}</td>
+                <td><span :class="statusClass(entry.status)">{{ entry.status }}</span></td>
+                <td>
+                  <Button size="sm" variant="secondary" @click="showPatientModal(entry.patient)">Details</Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    @click="handleCallPatient(entry)"
+                    :disabled="entry.status !== 'waiting'"
+                  >
+                    Call
+                  </Button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <!-- Queue Panel -->
-        <div class="card bg-base-100 shadow-xl w-full">
-          <div class="card-body">
-            <h2 class="card-title mb-4">Current Queue</h2>
-            <div class="overflow-x-auto">
-              <div v-if="loadingQueue" class="flex justify-center items-center py-8">
-                <span class="loading loading-spinner loading-md"></span>
-              </div>
-              <table v-else class="table table-zebra w-full min-w-[900px]">
-                <thead>
-                  <tr>
-                    <th class="px-4 py-2">Position</th>
-                    <th class="px-4 py-2">Patient</th>
-                    <th class="px-4 py-2">Email</th>
-                    <th class="px-4 py-2">MRN</th>
-                    <th class="px-4 py-2">Status</th>
-                    <th class="px-4 py-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="entry in queue" :key="entry.id">
-                    <td class="px-4 py-2">{{ entry.position }}</td>
-                    <td class="px-4 py-2">{{ entry.patient?.user?.name || '-' }}</td>
-                    <td class="px-4 py-2">{{ entry.patient?.user?.email || '-' }}</td>
-                    <td class="px-4 py-2">{{ entry.patient?.medical_record_number || '-' }}</td>
-                    <td class="px-4 py-2">
-                      <span :class="statusClass(entry.status)">{{ entry.status }}</span>
-                    </td>
-                    <td class="px-4 py-2">
-                      <button class="btn btn-xs btn-info mr-1" @click="showPatientModal(entry.patient)">Details</button>
-                      <button class="btn btn-xs btn-primary">Call</button>
-                    </td>
-                  </tr>
-                  <tr v-if="queue.length === 0">
-                    <td colspan="6" class="text-center text-gray-400">No patients in queue</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+      </Card>
       <!-- Patient Details Modal -->
-      <dialog id="patient-modal" class="modal" :open="!!selectedPatient">
-        <form method="dialog" class="modal-box">
-          <h3 class="font-bold text-lg mb-2">Patient Details</h3>
-          <div v-if="selectedPatient">
-            <p><span class="font-bold">Name:</span> {{ selectedPatient.user?.name || '-' }}</p>
-            <p><span class="font-bold">Email:</span> {{ selectedPatient.user?.email || '-' }}</p>
-            <p><span class="font-bold">Medical Record #:</span> {{ selectedPatient.medical_record_number || '-' }}</p>
-            <p><span class="font-bold">User ID:</span> {{ selectedPatient.user_id || '-' }}</p>
-            <p><span class="font-bold">Patient ID:</span> {{ selectedPatient.id || '-' }}</p>
-            <p><span class="font-bold">Created At:</span> {{ selectedPatient.created_at || '-' }}</p>
-            <p><span class="font-bold">Updated At:</span> {{ selectedPatient.updated_at || '-' }}</p>
-          </div>
-          <div class="modal-action">
-            <button class="btn" @click="closePatientModal">Close</button>
-          </div>
-        </form>
-      </dialog>
+      <Modal :visible="!!selectedPatient" title="Patient Details" @close="closePatientModal">
+        <div v-if="selectedPatient">
+          <p><span class="font-bold">Name:</span> {{ selectedPatient.user?.name || '-' }}</p>
+          <p><span class="font-bold">Email:</span> {{ selectedPatient.user?.email || '-' }}</p>
+          <p><span class="font-bold">Medical Record #:</span> {{ selectedPatient.medical_record_number || '-' }}</p>
+          <p><span class="font-bold">User ID:</span> {{ selectedPatient.user_id || '-' }}</p>
+          <p><span class="font-bold">Patient ID:</span> {{ selectedPatient.id || '-' }}</p>
+          <p><span class="font-bold">Created At:</span> {{ selectedPatient.created_at || '-' }}</p>
+          <p><span class="font-bold">Updated At:</span> {{ selectedPatient.updated_at || '-' }}</p>
+        </div>
+        <template #actions>
+          <Button @click="closePatientModal">Close</Button>
+        </template>
+      </Modal>
       <!-- Edit Availability Modal -->
-      <dialog id="availability-modal" class="modal" :open="showAvailabilityModal">
-        <form method="dialog" class="modal-box" @submit.prevent="saveAvailability">
-          <h3 class="font-bold text-lg mb-4">Edit Availability</h3>
-          <div v-if="availabilityError" class="alert alert-error mb-2">{{ availabilityError }}</div>
-          <div v-if="availabilitySuccess" class="alert alert-success mb-2">{{ availabilitySuccess }}</div>
-          <div v-for="day in daysOfWeek" :key="day" class="mb-4">
-            <div class="font-bold mb-2">{{ capitalize(day) }}</div>
-            <div v-for="(range, idx) in tempAvailability[day]" :key="idx" class="flex items-center gap-2 mb-2">
-              <input v-model="tempAvailability[day][idx]" class="input input-bordered input-sm w-40" placeholder="e.g. 09:00-12:00" />
-              <button class="btn btn-xs btn-error" type="button" @click="removeRange(day, idx)">Remove</button>
-            </div>
-            <button class="btn btn-xs btn-success" type="button" @click="addRange(day)">Add Time Range</button>
+      <Modal :visible="showAvailabilityModal" title="Edit Availability" @close="closeAvailabilityModal">
+        <Notification v-if="availabilityError" type="error" :message="availabilityError" @close="availabilityError = ''" />
+        <Notification v-if="availabilitySuccess" type="success" :message="availabilitySuccess" @close="availabilitySuccess = ''" />
+        <div v-for="day in daysOfWeek" :key="day" class="mb-4">
+          <div class="font-bold mb-2">{{ capitalize(day) }}</div>
+          <div v-for="(range, idx) in tempAvailability[day]" :key="idx" class="flex items-center gap-2 mb-2">
+            <TextInput v-model="tempAvailability[day][idx]" placeholder="e.g. 09:00-12:00" size="sm" />
+            <Button size="sm" variant="danger" type="button" @click="removeRange(day, idx)">Remove</Button>
           </div>
-          <div class="modal-action">
-            <button class="btn" type="button" @click="closeAvailabilityModal">Cancel</button>
-            <button class="btn btn-primary" type="submit" :disabled="availabilityLoading">Save</button>
-          </div>
-        </form>
-      </dialog>
+          <Button size="sm" variant="success" type="button" @click="addRange(day)">Add Time Range</Button>
+        </div>
+        <template #actions>
+          <Button variant="secondary" type="button" @click="closeAvailabilityModal">Cancel</Button>
+          <Button variant="primary" type="submit" :loading="availabilityLoading" @click="saveAvailability">Save</Button>
+        </template>
+      </Modal>
     </div>
   </DoctorLayout>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, watch, watchEffect } from 'vue'
+import { useRouter } from 'vue-router'
 import DoctorLayout from '../../layouts/DoctorLayout.vue'
 import { useUserStore } from '../../store/user'
-import { getAppointments, getQueues } from '../../services/api'
+import { getAppointments, getQueues, callPatient } from '../../services/api'
 import api from '../../services/api'
+import { format, parseISO } from 'date-fns'
+import Card from '@/components/Card.vue'
+import Button from '@/components/Button.vue'
+import Modal from '@/components/Modal.vue'
+import Notification from '@/components/Notification.vue'
+import TextInput from '@/components/TextInput.vue'
+import { useQueueEvents } from '@/utils/useQueueEvents'
+
+useQueueEvents()
 
 const appointments = ref([])
 const queue = ref([])
 const loadingAppointments = ref(true)
 const loadingQueue = ref(true)
 const userStore = useUserStore()
-const doctorInfo = ref(null)
+const router = useRouter()
+const doctorInfo = computed(() => userStore.user?.doctor || {})
 const selectedPatient = ref(null)
 const showAvailabilityModal = ref(false)
 const tempAvailability = ref({})
@@ -172,6 +158,26 @@ const daysOfWeek = [
 const availabilityLoading = ref(false)
 const availabilityError = ref('')
 const availabilitySuccess = ref('')
+
+const doctorId = computed(() => userStore.user?.doctor?.id)
+
+const appointmentColumns = [
+  { key: 'scheduled_at', label: 'Date' },
+  { key: 'scheduled_at', label: 'Time' },
+  { key: 'patient', label: 'Patient' },
+  { key: 'email', label: 'Email' },
+  { key: 'mrn', label: 'MRN' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Action' }
+]
+const queueColumns = [
+  { key: 'position', label: 'Position' },
+  { key: 'patient', label: 'Patient' },
+  { key: 'email', label: 'Email' },
+  { key: 'mrn', label: 'MRN' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Action' }
+]
 
 const parsedAvailabilityArray = computed(() => {
   if (!doctorInfo.value?.availability) return []
@@ -190,34 +196,50 @@ function closePatientModal() {
   selectedPatient.value = null
 }
 
-onMounted(async () => {
-  const doctorId = userStore.user?.doctor_id
-  if (!doctorId) return
-
-  // Fetch appointments
-  try {
-    const apptRes = await getAppointments({ doctorId })
-    appointments.value = apptRes.data.data || []
-    // Set doctor info from first appointment if available
-    if (appointments.value.length > 0 && appointments.value[0].doctor) {
-      doctorInfo.value = appointments.value[0].doctor
+watch(
+  () => [userStore.ready, doctorId.value],
+  async ([ready, id]) => {
+    console.log('[Doctor Dashboard] Watch triggered:', { ready, doctorId: id });
+    if (!ready) return;
+    if (!id) {
+      loadingAppointments.value = false;
+      loadingQueue.value = false;
+      console.log('[Doctor Dashboard] No doctorId, skipping fetch.');
+      return;
     }
-  } catch (e) {
-    appointments.value = []
-  } finally {
-    loadingAppointments.value = false
-  }
 
-  // Fetch queue
-  try {
-    const queueRes = await getQueues({ doctorId })
-    queue.value = queueRes.data.data || []
-  } catch (e) {
-    queue.value = []
-  } finally {
-    loadingQueue.value = false
-  }
-})
+    // Fetch appointments
+    try {
+      console.log('[Doctor Dashboard] Fetching appointments for doctorId:', id);
+      const apptRes = await getAppointments({ doctorId: id });
+      console.log('[Doctor Dashboard] Appointments API response:', apptRes.data);
+      appointments.value = apptRes.data.data || [];
+      // Optionally update doctorInfo from first appointment
+      if (appointments.value.length > 0 && appointments.value[0].doctor) {
+        doctorInfo.value = appointments.value[0].doctor
+      }
+    } catch (e) {
+      console.error('[Doctor Dashboard] Error fetching appointments:', e);
+      appointments.value = [];
+    } finally {
+      loadingAppointments.value = false;
+    }
+
+    // Fetch queue
+    try {
+      console.log('[Doctor Dashboard] Fetching queues for doctorId:', id);
+      const queueRes = await getQueues({ doctorId: id });
+      console.log('[Doctor Dashboard] Queues API response:', queueRes.data);
+      queue.value = queueRes.data.data || [];
+    } catch (e) {
+      console.error('[Doctor Dashboard] Error fetching queues:', e);
+      queue.value = [];
+    } finally {
+      loadingQueue.value = false;
+    }
+  },
+  { immediate: true }
+);
 
 function statusClass(status) {
   if (status === 'scheduled') return 'badge badge-info'
@@ -282,4 +304,20 @@ async function saveAvailability() {
     availabilityLoading.value = false
   }
 }
+
+function handleCallPatient(queueEntry) {
+  callPatient(queueEntry.id)
+    .then(() => {
+      // Optionally show a notification or update UI
+    })
+    .catch(() => {
+      // Optionally handle error
+    });
+}
+
+watchEffect(() => {
+  if (userStore.ready && !userStore.user) {
+    router.push('/login')
+  }
+})
 </script>
