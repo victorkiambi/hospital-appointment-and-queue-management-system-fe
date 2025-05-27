@@ -1,0 +1,316 @@
+/* Admin Dashboard Styles */
+
+/* Statistics Cards - Enhanced */
+.stats-cards-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8;
+}
+
+.stats-card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-200;
+  @apply hover:border-gray-300 hover:-translate-y-0.5;
+}
+
+.stats-card-header {
+  @apply flex items-start gap-4;
+}
+
+.stats-card-icon {
+  @apply w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0;
+  @apply shadow-sm ring-1 ring-black ring-opacity-5;
+}
+
+.stats-card-icon.users {
+  @apply bg-blue-50 text-blue-600;
+}
+
+.stats-card-icon.doctors {
+  @apply bg-green-50 text-green-600;
+}
+
+.stats-card-icon.patients {
+  @apply bg-purple-50 text-purple-600;
+}
+
+.stats-card-icon.appointments {
+  @apply bg-orange-50 text-orange-600;
+}
+
+.stats-card-icon.queues {
+  @apply bg-indigo-50 text-indigo-600;
+}
+
+.stats-card-info {
+  @apply flex-1 min-w-0;
+}
+
+.stats-card-label {
+  @apply text-sm font-medium text-gray-600 mb-1;
+}
+
+.stats-card-value {
+  @apply text-2xl font-bold text-gray-900 mb-3;
+  @apply sm:text-3xl;
+}
+
+.stats-card-footer {
+  @apply mt-4 pt-4 border-t border-gray-100;
+}
+
+.stats-card-trend {
+  @apply flex items-center gap-1 text-xs font-medium;
+}
+
+.stats-card-trend.positive {
+  @apply text-green-600;
+}
+
+.stats-card-trend.neutral {
+  @apply text-gray-500;
+}
+
+.stats-card-trend.negative {
+  @apply text-red-600;
+}
+
+/* Loading state for stats cards */
+.stats-card.loading {
+  @apply animate-pulse;
+}
+
+.stats-card.loading .stats-card-value {
+  @apply bg-gray-200 rounded h-8 w-16;
+}
+
+.stats-card.loading .stats-card-label {
+  @apply bg-gray-200 rounded h-4 w-20;
+}
+
+/* Responsive adjustments for stats cards */
+@media (max-width: 640px) {
+  .stats-cards-grid {
+    @apply grid-cols-1 gap-3;
+  }
+  
+  .stats-card {
+    @apply p-4;
+  }
+  
+  .stats-card-header {
+    @apply gap-3;
+  }
+  
+  .stats-card-icon {
+    @apply w-10 h-10;
+  }
+  
+  .stats-card-value {
+    @apply text-xl;
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 641px) {
+  .stats-cards-grid {
+    @apply grid-cols-2;
+  }
+}
+
+/* Role Badges */
+.role-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize;
+}
+
+.role-badge.admin {
+  @apply bg-red-100 text-red-800;
+}
+
+.role-badge.doctor {
+  @apply bg-green-100 text-green-800;
+}
+
+.role-badge.patient {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.role-badge.default {
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* User Avatar */
+.user-avatar {
+  @apply w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-semibold text-blue-700 shadow-sm;
+}
+
+.user-avatar.small {
+  @apply w-8 h-8 text-base;
+}
+
+.user-avatar.large {
+  @apply w-12 h-12 text-base;
+}
+
+/* Search and Filter Bar */
+.search-filter-bar {
+  @apply flex flex-col sm:flex-row gap-4 mb-6 items-center;
+}
+
+.search-input {
+  @apply w-64 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition;
+  padding-left: 2.5rem;
+}
+
+.search-input:focus {
+  @apply ring-2 ring-blue-500 border-blue-500;
+}
+
+.search-input:hover {
+  @apply border-blue-400;
+}
+
+.search-icon {
+  @apply absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400;
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  @apply hidden md:flex ml-8 space-x-6;
+}
+
+.nav-tab {
+  @apply pb-2 px-1 text-sm font-medium;
+}
+
+.nav-tab.active {
+  @apply text-blue-600 border-b-2 border-blue-600;
+}
+
+.nav-tab.inactive {
+  @apply text-gray-500 hover:text-gray-700;
+}
+
+/* Header Styles */
+.admin-header {
+  @apply bg-white shadow-sm border-b border-gray-200;
+}
+
+.admin-header-content {
+  @apply px-6 py-4;
+}
+
+.admin-header-main {
+  @apply flex items-center justify-between;
+}
+
+.admin-header-brand {
+  @apply flex items-center gap-4;
+}
+
+.admin-header-logo {
+  @apply flex items-center gap-3;
+}
+
+.admin-header-title {
+  @apply text-xl font-semibold text-gray-900;
+}
+
+.admin-header-subtitle {
+  @apply text-sm text-gray-500;
+}
+
+/* User Menu */
+.user-menu {
+  @apply flex items-center gap-4;
+}
+
+.user-menu-button {
+  @apply flex items-center gap-2 focus:outline-none;
+}
+
+.user-menu-dropdown {
+  @apply absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50;
+}
+
+.user-menu-header {
+  @apply px-4 py-3 border-b;
+}
+
+.user-menu-name {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.user-menu-role {
+  @apply text-xs text-gray-500;
+}
+
+.user-menu-item {
+  @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100;
+}
+
+/* Notification Badge */
+.notification-button {
+  @apply p-2 text-gray-400 hover:text-gray-600 relative;
+}
+
+.notification-badge {
+  @apply absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center;
+}
+
+/* Section Headers */
+.section-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.section-title {
+  @apply text-2xl font-bold text-gray-900;
+}
+
+.section-subtitle {
+  @apply text-gray-600;
+}
+
+.section-meta {
+  @apply flex items-center gap-2 text-sm text-gray-500;
+}
+
+/* Management Cards */
+.management-card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8;
+}
+
+.management-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.management-title {
+  @apply text-lg font-semibold text-gray-900;
+}
+
+.management-subtitle {
+  @apply text-sm text-gray-600;
+}
+
+.management-actions {
+  @apply flex items-center gap-3;
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .admin-header-brand {
+    @apply flex-col items-start gap-2;
+  }
+  
+  .user-menu {
+    @apply gap-2;
+  }
+  
+  .search-filter-bar {
+    @apply flex-col gap-3;
+  }
+  
+  .management-header {
+    @apply flex-col items-start gap-4;
+  }
+  
+  .management-actions {
+    @apply w-full justify-end;
+  }
+}

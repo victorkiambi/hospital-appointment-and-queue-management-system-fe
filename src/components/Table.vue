@@ -39,11 +39,23 @@
             class="text-center py-12 text-gray-400"
           >
             <div class="space-y-2">
-              <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="!hasFilters" class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p class="text-sm font-medium">No data found</p>
-              <p class="text-xs text-gray-400">There are no records to display at this time.</p>
+              <svg v-else class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <p v-if="!hasFilters" class="text-sm font-medium">No data found</p>
+              <p v-else class="text-sm font-medium">No results match your filters</p>
+              <p v-if="!hasFilters" class="text-xs text-gray-400">There are no records to display at this time.</p>
+              <p v-else class="text-xs text-gray-400">Try adjusting your search or filters</p>
+              <button
+                v-if="hasFilters && clearFilters"
+                @click="clearFilters"
+                class="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Clear all filters
+              </button>
             </div>
           </td>
         </tr>
@@ -94,6 +106,14 @@ const props = defineProps({
   loading: { 
     type: Boolean, 
     default: false 
+  },
+  hasFilters: {
+    type: Boolean,
+    default: false
+  },
+  clearFilters: {
+    type: Function,
+    default: null
   }
 })
 </script>

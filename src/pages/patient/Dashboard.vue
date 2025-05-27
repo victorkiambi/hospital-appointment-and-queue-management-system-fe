@@ -274,16 +274,23 @@ import Notification from '@/components/Notification.vue'
 import Select from '@/components/Select.vue'
 import { useQueueEvents } from '@/utils/useQueueEvents'
 import { formatDateTime } from '@/utils/format'
-import PatientAppointmentsTable from '@/components/PatientAppointmentsTable.vue'
-import PatientQueueTable from '@/components/PatientQueueTable.vue'
+import PatientAppointmentsTable from '@/pages/patient/PatientAppointmentsTable.vue'
+import PatientQueueTable from '@/pages/patient/PatientQueueTable.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import TimeSlotPicker from '@/components/TimeSlotPicker.vue'
 
 const calledNotification = ref('')
 
 useQueueEvents({
-  onPatientCalled: () => {
+  onPatientCalled: (payload) => {
     calledNotification.value = 'You have been called by the doctor!';
+    // Update appointment status in frontend state
+    if (payload && payload.appointment_id) {
+      const idx = appointments.value.findIndex(a => a.id === payload.appointment_id);
+      if (idx !== -1) {
+        appointments.value[idx].status = 'called';
+      }
+    }
     setTimeout(() => { calledNotification.value = '' }, 5000)
   }
 })
@@ -329,15 +336,27 @@ const selectedDoctor = computed(() => {
   return doctors.value.find(doc => doc.id === Number(selectedDoctorId.value))
 })
 
+function parseAvailability(avail) {
+  if (Array.isArray(avail)) return avail
+  if (typeof avail === 'string') {
+    try {
+      const arr = JSON.parse(avail)
+      return Array.isArray(arr) ? arr : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 const parsedAvailabilityArray = computed(() => {
   if (!selectedDoctor.value?.availability) return []
-  try {
-    const arr = JSON.parse(selectedDoctor.value.availability)
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
+  return parseAvailability(selectedDoctor.value.availability)
 })
+
+function parseAvailabilityForModal(availability) {
+  return parseAvailability(availability)
+}
 
 function formatTime(timeString) {
   if (!timeString) return ''
@@ -369,15 +388,6 @@ const selectedDoctorForModal = ref(null)
 
 function closeDoctorModal() {
   selectedDoctorForModal.value = null
-}
-
-function parseAvailabilityForModal(availabilityString) {
-  try {
-    const arr = JSON.parse(availabilityString)
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
 }
 
 function openBookingModal() {
@@ -435,14 +445,26 @@ function closeCancelModal() {
   cancelError.value = '';
 }
 
+function syncAppointmentsWithQueue() {
+  queueEntries.value.forEach(entry => {
+    if (entry.appointment_id && entry.status === 'called') {
+      const idx = appointments.value.findIndex(a => a.id === entry.appointment_id);
+      if (idx !== -1) {
+        appointments.value[idx].status = 'called';
+      }
+    }
+  });
+}
+
 async function fetchQueue(patientId) {
   loadingQueue.value = true;
   try {
     const queueRes = await getQueues({ patientId });
     queueEntries.value = queueRes.data.data || [];
-    
     // Check for expired queue entries and update them
     await updateExpiredQueueEntries();
+    // Sync appointment statuses with queue
+    syncAppointmentsWithQueue();
   } catch (e) {
     console.error('[Patient Dashboard] Error fetching queues:', e);
     queueEntries.value = [];
@@ -608,12 +630,7 @@ function onDoctorChange() {
     console.log('Selected doctor has no availability:', doc)
     return
   }
-  let availArr = []
-  try {
-    availArr = JSON.parse(doc.availability)
-  } catch {
-    availArr = []
-  }
+  let availArr = parseAvailability(doc.availability)
   if (!Array.isArray(availArr) || availArr.length === 0) {
     availableDays.value = []
     console.log('Doctor availability array is empty or invalid:', availArr)
@@ -667,12 +684,7 @@ function onDateChange() {
     availableSlots.value = []
     return
   }
-  let availArr = []
-  try {
-    availArr = JSON.parse(doc.availability)
-  } catch {
-    availArr = []
-  }
+  let availArr = parseAvailability(doc.availability)
   if (!Array.isArray(availArr)) {
     availableSlots.value = []
     return
@@ -825,6 +837,8 @@ watch(
       
       // Check for expired queue entries and update them
       await updateExpiredQueueEntries();
+      // Sync appointment statuses with queue
+      syncAppointmentsWithQueue();
     } catch (e) {
       console.error('[Patient Dashboard] Error fetching queues:', e);
       queueEntries.value = [];

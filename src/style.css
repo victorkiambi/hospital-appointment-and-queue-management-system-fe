@@ -5,3 +5,4 @@
 /* Import custom styles */
 @import "./styles/tables.css";
 @import "./styles/modals.css";
+@import "./styles/admin.css";

@@ -99,7 +99,7 @@
 import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import { computed } from 'vue'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime } from '@/utils/format.js'
 import { getEnhancedStatusClass } from '@/pages/patient/status.js'
 import { isAppointmentExpired, canCancelAppointment } from '@/pages/patient/appointments.js'
 

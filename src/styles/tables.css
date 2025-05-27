@@ -8,23 +8,336 @@
 }
 
 .enhanced-table thead {
-  @apply bg-gray-50/50;
+  @apply bg-gray-50;
 }
 
 .enhanced-table th {
-  @apply px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200;
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
 }
 
 .enhanced-table tbody {
-  @apply bg-white divide-y divide-gray-100/70;
+  @apply bg-white divide-y divide-gray-100;
 }
 
 .enhanced-table tr:hover {
-  @apply bg-gray-50/50 transition-colors duration-200;
+  @apply bg-gray-50 transition-colors duration-200;
 }
 
 .enhanced-table td {
-  @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+  @apply px-6 py-4 whitespace-nowrap;
+}
+
+/* Appointments Table Specific Styles */
+.appointments-table-container {
+  @apply enhanced-table;
+}
+
+.appointments-table {
+  @apply min-w-full divide-y divide-gray-200;
+}
+
+.appointments-table thead {
+  @apply bg-gray-50;
+}
+
+.appointments-table th {
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+}
+
+.appointments-table tbody {
+  @apply bg-white divide-y divide-gray-100;
+}
+
+.appointments-table tbody tr:hover {
+  @apply bg-gray-50 transition-colors duration-200;
+}
+
+.appointments-table td {
+  @apply px-6 py-4 whitespace-nowrap;
+}
+
+/* Appointments Search & Filter Bar */
+.appointments-search-bar {
+  @apply flex flex-col lg:flex-row gap-4 mb-6 items-stretch lg:items-end;
+}
+
+.appointments-search-group {
+  @apply flex flex-1 flex-col sm:flex-row gap-4 items-stretch sm:items-end w-full;
+}
+
+.appointments-search-input {
+  @apply relative flex-1 min-w-80;
+}
+
+.appointments-search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10;
+}
+
+.appointments-search-field {
+  @apply w-full h-11 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm placeholder-gray-500;
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+  @apply hover:border-gray-400 hover:shadow-sm;
+  @apply bg-white shadow-sm;
+}
+
+.appointments-filter-group {
+  @apply flex flex-wrap gap-3 items-stretch;
+}
+
+.appointments-filter-select {
+  @apply min-w-36 h-11;
+}
+
+/* Enhanced Select Styling for Filters - Force override */
+.appointments-filter-select {
+  @apply min-w-36 h-11 flex items-end;
+}
+
+/* Target the Select component wrapper more specifically with !important */
+.appointments-filter-select > div {
+  margin-bottom: 0 !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+}
+
+.appointments-filter-select select {
+  @apply h-11 border-gray-300 rounded-lg text-sm py-2.5;
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+  @apply hover:border-gray-400 hover:shadow-sm;
+  @apply bg-white shadow-sm;
+  margin-bottom: 0 !important;
+}
+
+.appointments-filter-select label {
+  display: none !important;
+}
+
+.appointments-actions {
+  @apply flex items-end h-11;
+}
+
+.appointments-clear-filters {
+  @apply text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer transition-colors;
+  @apply px-3 py-2 rounded-md hover:bg-gray-50;
+}
+
+/* Filter Summary */
+.appointments-filter-summary {
+  @apply mb-4 px-1;
+}
+
+.appointments-filter-summary p {
+  @apply text-sm text-gray-600 font-medium;
+}
+
+/* Enhanced Search Input States */
+.appointments-search-field:focus {
+  @apply ring-2 ring-blue-500 border-blue-500 shadow-md;
+}
+
+.appointments-search-field::placeholder {
+  @apply text-gray-400;
+}
+
+/* Loading state for search */
+.appointments-search-input.loading .appointments-search-icon {
+  @apply animate-pulse;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .appointments-search-bar {
+    @apply gap-3;
+  }
+  
+  .appointments-search-group {
+    @apply w-full gap-3;
+  }
+  
+  .appointments-search-input {
+    @apply min-w-0 w-full;
+  }
+}
+
+@media (max-width: 640px) {
+  .appointments-search-bar {
+    @apply gap-3;
+  }
+  
+  .appointments-search-group {
+    @apply flex-col gap-3 w-full;
+  }
+  
+  .appointments-search-input {
+    @apply w-full min-w-0;
+  }
+  
+  .appointments-filter-group {
+    @apply w-full grid grid-cols-2 gap-2;
+  }
+  
+  .appointments-filter-select {
+    @apply min-w-0;
+  }
+  
+  .appointments-actions {
+    @apply w-full justify-center h-auto;
+  }
+}
+
+/* Users Table Search & Filter Bar */
+.users-search-bar {
+  @apply flex flex-col lg:flex-row gap-4 mb-6 items-stretch lg:items-end;
+}
+
+.users-search-group {
+  @apply flex flex-1 flex-col sm:flex-row gap-4 items-stretch sm:items-end w-full;
+  /* Ensure both search and filter align at the same baseline */
+  align-items: flex-end;
+}
+
+.users-search-input {
+  @apply relative flex-1 min-w-80;
+  /* Ensure search input container matches filter height */
+  height: 44px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.users-search-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10;
+}
+
+.users-search-field {
+  @apply w-full h-11 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm placeholder-gray-500;
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+  @apply hover:border-gray-400 hover:shadow-sm;
+  @apply bg-white shadow-sm;
+}
+
+.users-filter-group {
+  @apply flex flex-wrap gap-3 items-end;
+  /* Ensure all filter elements align to the bottom */
+  align-items: flex-end;
+  min-height: 44px;
+}
+
+.users-filter-select {
+  @apply min-w-36 h-11 flex items-end;
+}
+
+/* Enhanced Select Styling for Users Table Filters */
+.users-filter-select {
+  @apply min-w-36 h-11 flex items-end;
+  /* Force the select to align with the search input baseline */
+  margin-top: auto;
+}
+
+.users-filter-select > div {
+  margin-bottom: 0 !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  /* Ensure the select container takes full height */
+  width: 100%;
+}
+
+.users-filter-select select {
+  @apply h-11 border-gray-300 rounded-lg text-sm py-2.5;
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+  @apply hover:border-gray-400 hover:shadow-sm;
+  @apply bg-white shadow-sm;
+  margin-bottom: 0 !important;
+  /* Ensure the select input is at the bottom of its container */
+  align-self: flex-end;
+}
+
+.users-filter-select label {
+  display: none !important;
+}
+
+.users-actions {
+  @apply flex items-end h-11 gap-3;
+  /* Add margin-left to the button for spacing from clear filters */
+}
+.users-actions .button-success {
+  @apply ml-2;
+}
+
+.users-clear-filters {
+  @apply text-sm text-gray-500 hover:text-gray-700 underline cursor-pointer transition-colors;
+  @apply px-3 py-2 rounded-md hover:bg-gray-50;
+}
+
+/* Users Filter Summary */
+.users-filter-summary {
+  @apply mb-4 px-1;
+}
+
+.users-filter-summary p {
+  @apply text-sm text-gray-600 font-medium;
+}
+
+/* Enhanced TextInput Styling for Users Search */
+.users-search-text-input > div {
+  margin-bottom: 0 !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+}
+
+.users-search-text-input input {
+  @apply h-11 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm placeholder-gray-500;
+  @apply focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+  @apply hover:border-gray-400 hover:shadow-sm;
+  @apply bg-white shadow-sm;
+  margin-bottom: 0 !important;
+}
+
+.users-search-text-input label {
+  display: none !important;
+}
+
+/* Users Table Responsive */
+@media (max-width: 1024px) {
+  .users-search-bar {
+    @apply gap-3;
+  }
+  
+  .users-search-group {
+    @apply w-full gap-3;
+  }
+  
+  .users-search-input {
+    @apply min-w-0 w-full;
+  }
+}
+
+@media (max-width: 640px) {
+  .users-search-bar {
+    @apply gap-3;
+  }
+  
+  .users-search-group {
+    @apply flex-col gap-3 w-full;
+  }
+  
+  .users-search-input {
+    @apply w-full min-w-0;
+  }
+  
+  .users-filter-group {
+    @apply w-full;
+  }
+  
+  .users-filter-select {
+    @apply min-w-0 flex-1;
+  }
+  
+  .users-actions {
+    @apply w-full justify-center h-auto;
+  }
 }
 
 .enhanced-table .table-actions {
@@ -32,62 +345,80 @@
 }
 
 .enhanced-table .table-actions > div {
-  @apply flex items-center justify-end space-x-2;
+  @apply flex items-center justify-end gap-2;
 }
 
-/* Loading State */
-.enhanced-table .loading-row td {
-  @apply text-center py-12 text-gray-500;
+/* Loading States */
+.loading-row td {
+  @apply py-12;
 }
 
-.enhanced-table .loading-content {
-  @apply inline-flex items-center space-x-2;
+.loading-content {
+  @apply flex items-center justify-center gap-3 text-gray-500;
 }
 
-.enhanced-table .loading-spinner {
-  @apply w-5 h-5 animate-spin text-blue-500;
+.loading-spinner {
+  @apply w-5 h-5 animate-spin;
 }
 
-/* Empty State */
-.enhanced-table .empty-row td {
-  @apply text-center py-12 text-gray-400;
+/* Empty States */
+.empty-row td {
+  @apply py-12;
 }
 
-.enhanced-table .empty-content {
-  @apply space-y-2;
+.empty-content {
+  @apply flex flex-col items-center justify-center gap-2 text-gray-400;
 }
 
-.enhanced-table .empty-icon {
-  @apply w-12 h-12 mx-auto text-gray-300;
+.empty-icon {
+  @apply w-12 h-12 mb-2;
+}
+
+/* Table Cell Types */
+.table-cell-primary {
+  @apply text-sm font-medium text-gray-900;
+}
+
+.table-cell-secondary {
+  @apply text-sm text-gray-500;
+}
+
+.table-cell-muted {
+  @apply text-gray-400 italic;
 }
 
 /* Status Badges - Enhanced */
 .status-badge {
-  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
 }
 
 .status-badge.scheduled {
-  @apply bg-blue-100 text-blue-800 border border-blue-200;
+  @apply bg-blue-100 text-blue-800;
 }
 
 .status-badge.waiting {
-  @apply bg-yellow-100 text-yellow-800 border border-yellow-200;
+  @apply bg-yellow-100 text-yellow-800;
 }
 
 .status-badge.called {
-  @apply bg-purple-100 text-purple-800 border border-purple-200;
+  @apply bg-green-100 text-green-800;
 }
 
 .status-badge.completed {
-  @apply bg-green-100 text-green-800 border border-green-200;
+  @apply bg-green-100 text-green-800;
 }
 
 .status-badge.cancelled {
-  @apply bg-red-100 text-red-800 border border-red-200;
+  @apply bg-red-100 text-red-800;
 }
 
 .status-badge.expired {
-  @apply bg-gray-100 text-gray-800 border border-gray-200;
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* Expired Badge */
+.expired-badge {
+  @apply italic text-gray-400 bg-gray-100 px-2 py-1 rounded;
 }
 
 /* Responsive Table */
@@ -101,19 +432,6 @@
   }
 }
 
-/* Table Cell Types */
-.table-cell-primary {
-  @apply font-semibold text-gray-900;
-}
-
-.table-cell-secondary {
-  @apply text-gray-600;
-}
-
-.table-cell-muted {
-  @apply text-gray-400 italic;
-}
-
 /* Compact Table Variant */
 .enhanced-table.compact th {
   @apply px-4 py-2;
@@ -121,8 +439,4 @@
 
 .enhanced-table.compact td {
   @apply px-4 py-2;
-}
-
-.expired-badge {
-  @apply italic text-gray-400 bg-gray-100 px-2 py-1 rounded;
 }

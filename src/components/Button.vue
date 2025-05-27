@@ -39,6 +39,7 @@ const variantClasses = computed(() => {
   switch (props.variant) {
     case 'secondary': return 'bg-gray-100 text-gray-800 hover:bg-gray-200'
     case 'danger': return 'bg-red-600 text-white hover:bg-red-700'
+    case 'success': return 'bg-green-600 text-white hover:bg-green-700'
     default: return 'bg-blue-600 text-white hover:bg-blue-700'
   }
 })
