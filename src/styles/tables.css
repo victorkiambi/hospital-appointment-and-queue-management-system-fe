@@ -86,6 +86,10 @@
   @apply bg-red-100 text-red-800 border border-red-200;
 }
 
+.status-badge.expired {
+  @apply bg-gray-100 text-gray-800 border border-gray-200;
+}
+
 /* Responsive Table */
 @media (max-width: 768px) {
   .enhanced-table th {
@@ -117,4 +121,8 @@
 
 .enhanced-table.compact td {
   @apply px-4 py-2;
+}
+
+.expired-badge {
+  @apply italic text-gray-400 bg-gray-100 px-2 py-1 rounded;
 }

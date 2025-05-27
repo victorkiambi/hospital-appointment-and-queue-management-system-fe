@@ -1,0 +1,139 @@
+/* Modal Styles */
+
+/* Doctor Info Modal */
+.doctor-info-modal {
+  @apply space-y-6;
+}
+
+.doctor-info-section {
+  @apply bg-gray-50 rounded-lg p-4 space-y-3;
+}
+
+.doctor-info-item {
+  @apply flex flex-col sm:flex-row sm:items-center gap-2;
+}
+
+.doctor-info-label {
+  @apply font-semibold text-gray-700 text-sm uppercase tracking-wide min-w-24;
+}
+
+.doctor-info-value {
+  @apply text-gray-900 font-medium;
+}
+
+.doctor-info-value.secondary {
+  @apply text-gray-600 font-normal;
+}
+
+.doctor-info-availability {
+  @apply mt-4;
+}
+
+.doctor-info-availability-title {
+  @apply font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3;
+}
+
+.doctor-availability-list {
+  @apply bg-white rounded-md border border-gray-200 divide-y divide-gray-100;
+}
+
+.doctor-availability-item {
+  @apply px-4 py-3 flex items-center justify-between;
+}
+
+.doctor-availability-day {
+  @apply font-medium text-gray-900 capitalize min-w-20;
+}
+
+.doctor-availability-time {
+  @apply text-gray-600 font-mono text-sm bg-gray-50 px-2 py-1 rounded;
+}
+
+.doctor-availability-empty {
+  @apply px-4 py-6 text-center text-gray-400 italic;
+}
+
+/* Patient Info Modal */
+.patient-info-modal {
+  @apply space-y-6;
+}
+
+.patient-info-section {
+  @apply bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 space-y-3;
+}
+
+.patient-info-item {
+  @apply flex flex-col sm:flex-row sm:items-center gap-2;
+}
+
+.patient-info-label {
+  @apply font-semibold text-gray-700 text-sm uppercase tracking-wide min-w-32;
+}
+
+.patient-info-value {
+  @apply text-gray-900 font-medium;
+}
+
+.patient-info-value.muted {
+  @apply text-gray-500;
+}
+
+.patient-info-mrn {
+  @apply font-mono bg-white px-2 py-1 rounded border text-indigo-600;
+}
+
+.patient-info-dates {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+/* Modal Header Enhancements */
+.modal-header-doctor {
+  @apply border-b border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100;
+}
+
+.modal-header-patient {
+  @apply border-b border-indigo-200 bg-gradient-to-r from-indigo-50 to-indigo-100;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .doctor-info-item,
+  .patient-info-item {
+    @apply flex-col items-start;
+  }
+  
+  .doctor-info-label,
+  .patient-info-label {
+    @apply min-w-full mb-1;
+  }
+  
+  .doctor-availability-item {
+    @apply flex-col items-start gap-2;
+  }
+  
+  .doctor-availability-day {
+    @apply min-w-full;
+  }
+}
+
+/* Status indicators in modals */
+.modal-status-active {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800;
+}
+
+.modal-status-inactive {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+}
+
+/* Contact info styling */
+.contact-info {
+  @apply flex items-center gap-2 text-gray-600;
+}
+
+.contact-info-icon {
+  @apply w-4 h-4 text-gray-400;
+}
+
+.contact-info-value {
+  @apply font-medium;
+}

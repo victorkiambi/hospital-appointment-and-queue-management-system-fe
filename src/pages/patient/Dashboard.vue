@@ -8,127 +8,66 @@
         </Button>
       </div>
       <!-- Appointments Table -->
-      <Card title="My Appointments">
-        <div class="enhanced-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Doctor</th>
-                <th>Status</th>
-                <th class="table-actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loadingAppointments" class="loading-row">
-                <td colspan="5">
-                  <div class="loading-content">
-                    <svg class="loading-spinner" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                    <span class="text-sm font-medium">Loading appointments...</span>
-                  </div>
-                </td>
-              </tr>
-              <tr v-else-if="appointments.length === 0" class="empty-row">
-                <td colspan="5">
-                  <div class="empty-content">
-                    <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6m-6 0l.5-3h5l.5 3" />
-                    </svg>
-                    <p class="text-sm font-medium">No appointments scheduled</p>
-                    <p class="text-xs text-gray-400">Book your first appointment to get started</p>
-                  </div>
-                </td>
-              </tr>
-              <tr v-else v-for="appt in appointments" :key="appt.id">
-                <td>
-                  <div class="table-cell-primary">
-                    {{ formatDateTime(appt.scheduled_at, 'EEEE dd MMMM yyyy') }}
-                  </div>
-                </td>
-                <td>
-                  <div class="table-cell-secondary">
-                    {{ formatDateTime(appt.scheduled_at, 'h:mm a') }}
-                  </div>
-                </td>
-                <td>
-                  <div class="table-cell-primary">
-                    {{ appt.doctor?.user?.name || '-' }}
-                  </div>
-                  <div class="table-cell-secondary text-xs">
-                    {{ appt.doctor?.specialization || '' }}
-                  </div>
-                </td>
-                <td>
-                  <span :class="getEnhancedStatusClass(appt.status)">
-                    {{ appt.status }}
-                  </span>
-                </td>
-                <td class="table-actions">
-                  <div class="flex gap-2">
-                    <Button size="sm" variant="secondary" @click="showDoctorModal(appt.doctor)">
-                      Doctor Info
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="danger" 
-                      v-if="appt.status === 'scheduled'"
-                      :loading="cancellingAppointments.has(appt.id)"
-                      :disabled="cancellingAppointments.has(appt.id)"
-                      @click="cancelAppointment(appt)"
-                    >
-                      {{ cancellingAppointments.has(appt.id) ? 'Cancelling...' : 'Cancel' }}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <PatientAppointmentsTable
+        :appointments="appointments"
+        :loading="loadingAppointments"
+        :cancelling-appointments="cancellingAppointments"
+        @show-doctor-modal="showDoctorModal"
+        @cancel-appointment="cancelAppointment"
+      />
       <!-- Queue Table -->
-      <Card title="My Queue Entries">
-        <Table
-          :columns="queueColumns"
-          :data="queueEntries"
-          :loading="loadingQueue"
-        >
-          <template #doctor="{ row }">
-            {{ row.doctor?.user?.name || '-' }}
-          </template>
-          <template #specialization="{ row }">
-            {{ row.doctor?.specialization || '-' }}
-          </template>
-          <template #status="{ row }">
-            <span :class="statusClass(row.status)">{{ row.status }}</span>
-          </template>
-          <template #availability="{ row }">
-            <ul>
-              <li v-for="(a, idx) in parseAvailabilityArray(row.doctor?.availability)" :key="idx">
-                {{ a.day }}: {{ a.start }}-{{ a.end }}
-              </li>
-            </ul>
-          </template>
-        </Table>
-      </Card>
+      <PatientQueueTable
+        :queue-entries="queueEntries"
+        :loading="loadingQueue"
+        :appointments="appointments"
+      />
       <!-- Doctor Details Modal -->
-      <Modal :visible="!!selectedDoctor" title="Doctor Details" @close="closeDoctorModal">
-        <div v-if="selectedDoctor">
-          <p><span class="font-bold">Name:</span> {{ selectedDoctor.user?.name || '-' }}</p>
-          <p><span class="font-bold">Email:</span> {{ selectedDoctor.user?.email || '-' }}</p>
-          <p><span class="font-bold">Specialization:</span> {{ selectedDoctor.specialization || '-' }}</p>
-          <p><span class="font-bold">Availability:</span></p>
-          <ul class="list-disc ml-6">
-            <li v-for="(slot, idx) in parsedAvailabilityArray" :key="idx">
-              <span class="capitalize">{{ slot.day }}:</span> {{ slot.start }}-{{ slot.end }}
-            </li>
-          </ul>
+      <Modal :visible="!!selectedDoctor" title="Doctor Information" @close="closeDoctorModal">
+        <div v-if="selectedDoctor" class="doctor-info-modal">
+          <!-- Basic Information Section -->
+          <div class="doctor-info-section">
+            <div class="doctor-info-item">
+              <span class="doctor-info-label">Name</span>
+              <span class="doctor-info-value">{{ selectedDoctor.user?.name || 'Not provided' }}</span>
+            </div>
+            
+            <div class="doctor-info-item">
+              <span class="doctor-info-label">Email</span>
+              <div class="contact-info">
+                <svg class="contact-info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                </svg>
+                <span class="contact-info-value">{{ selectedDoctor.user?.email || 'Not provided' }}</span>
+              </div>
+            </div>
+            
+            <div class="doctor-info-item">
+              <span class="doctor-info-label">Specialization</span>
+              <span class="doctor-info-value">{{ selectedDoctor.specialization || 'General Practice' }}</span>
+            </div>
+            
+            <div class="doctor-info-item">
+              <span class="doctor-info-label">Status</span>
+              <span class="modal-status-active">Active</span>
+            </div>
+          </div>
+
+          <!-- Availability Section -->
+          <div class="doctor-info-availability">
+            <div class="doctor-info-availability-title">Weekly Schedule</div>
+            <div class="doctor-availability-list">
+              <div v-if="parsedAvailabilityArray.length === 0" class="doctor-availability-empty">
+                No availability schedule set
+              </div>
+              <div v-else v-for="(slot, idx) in parsedAvailabilityArray" :key="idx" class="doctor-availability-item">
+                <span class="doctor-availability-day">{{ slot.day }}</span>
+                <span class="doctor-availability-time">{{ slot.start }} - {{ slot.end }}</span>
+              </div>
+            </div>
+          </div>
         </div>
         <template #actions>
-          <Button @click="closeDoctorModal">Close</Button>
+          <Button variant="secondary" @click="closeDoctorModal">Close</Button>
         </template>
       </Modal>
       <!-- Booking Modal -->
@@ -172,25 +111,48 @@
       <!-- Cancel Confirmation Modal -->
       <Modal :visible="!!appointmentToCancel" title="Cancel Appointment" @close="closeCancelModal">
         <div v-if="appointmentToCancel">
-          <p class="mb-4">Are you sure you want to cancel this appointment?</p>
+          <p class="mb-4">
+            <template v-if="isAppointmentExpired(appointmentToCancel)">
+              This appointment has already passed, but you can still cancel it to remove it from your records.
+            </template>
+            <template v-else>
+              Are you sure you want to cancel this appointment?
+            </template>
+          </p>
           <div class="bg-gray-50 p-4 rounded-lg space-y-2">
             <p><span class="font-semibold">Doctor:</span> {{ appointmentToCancel.doctor?.user?.name }}</p>
             <p><span class="font-semibold">Date:</span> {{ formatDateTime(appointmentToCancel.scheduled_at, 'EEEE dd MMMM yyyy') }}</p>
             <p><span class="font-semibold">Time:</span> {{ formatDateTime(appointmentToCancel.scheduled_at, 'h:mm a') }}</p>
+            <p v-if="isAppointmentExpired(appointmentToCancel)" class="text-sm text-amber-600 bg-amber-50 px-2 py-1 rounded">
+              ⚠️ This appointment was scheduled in the past
+            </p>
           </div>
           <p class="text-sm text-gray-600 mt-4">This action cannot be undone.</p>
         </div>
         <template #actions>
           <Button variant="secondary" @click="closeCancelModal" :disabled="cancelLoading">
-            Keep Appointment
+            <template v-if="isAppointmentExpired(appointmentToCancel)">
+              Keep Record
+            </template>
+            <template v-else>
+              Keep Appointment
+            </template>
           </Button>
           <Button 
             variant="danger" 
             @click="confirmCancelAppointment" 
             :loading="cancelLoading"
-            :disabled="cancelLoading"
+            :disabled="cancelLoading || cancellingAppointments.has(appointmentToCancel?.id)"
           >
-            {{ cancelLoading ? 'Cancelling...' : 'Yes, Cancel Appointment' }}
+            <template v-if="cancelLoading">
+              Cancelling...
+            </template>
+            <template v-else-if="isAppointmentExpired(appointmentToCancel)">
+              Yes, Remove from Records
+            </template>
+            <template v-else>
+              Yes, Cancel Appointment
+            </template>
           </Button>
         </template>
       </Modal>
@@ -218,25 +180,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import PatientLayout from '../../layouts/PatientLayout.vue'
 import { useUserStore } from '../../store/user'
 import { getAppointments, getQueues } from '../../services/api'
 import api from '../../services/api'
-import { addDays, format, parseISO } from 'date-fns'
-import Card from '@/components/Card.vue'
-import Table from '@/components/Table.vue'
+import { addDays, format, parseISO, isBefore } from 'date-fns'
 import Button from '@/components/Button.vue'
 import Modal from '@/components/Modal.vue'
 import Notification from '@/components/Notification.vue'
 import Select from '@/components/Select.vue'
 import { useQueueEvents } from '@/utils/useQueueEvents'
 import { formatDateTime } from '@/utils/format'
+import PatientAppointmentsTable from '@/components/PatientAppointmentsTable.vue'
+import PatientQueueTable from '@/components/PatientQueueTable.vue'
 
 const calledNotification = ref('')
 
 useQueueEvents({
-  onPatientCalled: (queueEntry) => {
+  onPatientCalled: () => {
     calledNotification.value = 'You have been called by the doctor!';
     setTimeout(() => { calledNotification.value = '' }, 5000)
   }
@@ -289,23 +251,20 @@ const queueColumns = [
 const doctorOptions = computed(() => doctors.value.map(doc => ({ value: doc.id, label: `${doc.user?.name} (${doc.specialization})` })))
 const dateOptions = computed(() => availableDays.value.map(day => ({ value: day, label: day })))
 const slotOptions = computed(() => availableSlots.value.map(slot => ({ value: slot, label: slot })))
-
-const parsedAvailability = computed(() => {
+computed(() => {
   if (!selectedDoctor.value?.availability) return {}
   try {
     return JSON.parse(selectedDoctor.value.availability)
   } catch {
     return {}
   }
-})
-
-const appointmentsWithTime = computed(() =>
-  appointments.value.map(appt => ({
-    ...appt,
-    time: appt.scheduled_at
-  }))
-)
-
+});
+computed(() =>
+    appointments.value.map(appt => ({
+      ...appt,
+      time: appt.scheduled_at
+    }))
+);
 const parsedAvailabilityArray = computed(() => {
   if (!selectedDoctor.value?.availability) return []
   try {
@@ -351,9 +310,21 @@ function cancelAppointment(appointment, event) {
     event.stopPropagation();
   }
   
-  // Prevent duplicate calls if modal is already open
+  // Check if appointment is already being cancelled
+  if (cancellingAppointments.value.has(appointment.id)) {
+    console.log('Appointment is already being cancelled, ignoring request');
+    return;
+  }
+  
+  // Prevent duplicate calls if modal is already open for this appointment
   if (appointmentToCancel.value?.id === appointment.id) {
     console.log('Cancel modal already open for this appointment, ignoring duplicate call');
+    return;
+  }
+  
+  // Prevent duplicate calls if modal is already open for any appointment
+  if (appointmentToCancel.value && cancelLoading.value) {
+    console.log('Cancel operation already in progress, ignoring request');
     return;
   }
   
@@ -368,11 +339,22 @@ function closeCancelModal() {
   cancelError.value = '';
 }
 
+// Helper function to check if an appointment can be cancelled
+function canCancelAppointment(appointment) {
+  return (appointment.status === 'scheduled' || appointment.status === 'expired') && 
+         appointment.status !== 'completed' && 
+         appointment.status !== 'cancelled' && 
+         !cancellingAppointments.value.has(appointment.id);
+}
+
 async function fetchQueue(patientId) {
   loadingQueue.value = true;
   try {
     const queueRes = await getQueues({ patientId });
     queueEntries.value = queueRes.data.data || [];
+    
+    // Check for expired queue entries and update them
+    await updateExpiredQueueEntries();
   } catch (e) {
     console.error('[Patient Dashboard] Error fetching queues:', e);
     queueEntries.value = [];
@@ -381,28 +363,92 @@ async function fetchQueue(patientId) {
   }
 }
 
+// Function to update expired queue entries
+async function updateExpiredQueueEntries() {
+  const expiredQueueEntries = queueEntries.value.filter(entry => 
+    (entry.status === 'waiting' || entry.status === 'scheduled') && isQueueEntryExpired(entry)
+  );
+
+  for (const entry of expiredQueueEntries) {
+    try {
+      console.log(`Updating expired queue entry ${entry.id} to expired status`);
+      await api.put(`/queues/${entry.id}`, {
+        status: 'expired'
+      });
+      
+      // Update the local queue entry status
+      const index = queueEntries.value.findIndex(q => q.id === entry.id);
+      if (index !== -1) {
+        queueEntries.value[index].status = 'expired';
+      }
+    } catch (e) {
+      console.error(`Error updating queue entry ${entry.id} to expired:`, e);
+    }
+  }
+}
+
 async function confirmCancelAppointment() {
   if (!appointmentToCancel.value) return;
+  
   const appointment = appointmentToCancel.value;
+  const appointmentId = appointment.id;
+  
+  // Check if this appointment is already being cancelled
+  if (cancellingAppointments.value.has(appointmentId)) {
+    console.log('Appointment is already being cancelled, ignoring duplicate request');
+    return;
+  }
+  
+  // Set loading states immediately
   cancelLoading.value = true;
-  cancellingAppointments.value.add(appointment.id);
+  cancellingAppointments.value.add(appointmentId);
+  
   try {
-    console.log('Cancelling appointment:', appointment.id);
-    await api.delete(`/appointments/${appointment.id}`);
+    console.log('Cancelling appointment:', appointmentId);
+    
+    // Make the API call to cancel
+    await api.delete(`/appointments/${appointmentId}`);
+    
+    // Update the local appointment status immediately to prevent further attempts
+    const localIndex = appointments.value.findIndex(a => a.id === appointmentId);
+    if (localIndex !== -1) {
+      appointments.value[localIndex].status = 'cancelled';
+    }
+    
     cancelSuccess.value = `Appointment with Dr. ${appointment.doctor?.user?.name} has been cancelled successfully.`;
-    // Refresh appointments and queue
+    
+    // Close the modal immediately
+    closeCancelModal();
+    
+    // Refresh data in the background
     const patientId = patientInfo.value?.patient?.id;
     if (patientId) {
-      await fetchAppointments(patientId);
-      await fetchQueue(patientId);
+      // Don't await these calls to avoid blocking the UI
+      Promise.all([
+        fetchAppointments(patientId),
+        fetchQueue(patientId)
+      ]).catch(e => {
+        console.error('Error refreshing data after cancellation:', e);
+      });
     }
-    closeCancelModal();
   } catch (e) {
     console.error('Error cancelling appointment:', e);
-    cancelError.value = 'Failed to cancel appointment. Please try again later.';
+    
+    // Check if it's a conflict error (appointment already cancelled)
+    if (e.response?.status === 409) {
+      cancelError.value = 'This appointment has already been cancelled.';
+      // Update local state to reflect the cancellation
+      const localIndex = appointments.value.findIndex(a => a.id === appointmentId);
+      if (localIndex !== -1) {
+        appointments.value[localIndex].status = 'cancelled';
+      }
+      closeCancelModal();
+    } else {
+      cancelError.value = 'Failed to cancel appointment. Please try again later.';
+    }
   } finally {
     cancelLoading.value = false;
-    cancellingAppointments.value.delete(appointment.id);
+    cancellingAppointments.value.delete(appointmentId);
   }
 }
 
@@ -442,6 +488,21 @@ async function fetchAppointments(patientId) {
   } finally {
     fetchingAppointments.value = false;
   }
+}
+
+// Function to check if an appointment is in the past
+function isAppointmentExpired(appt) {
+  // Only mark as expired if not completed or cancelled
+  if (appt.status === 'completed' || appt.status === 'cancelled') return false;
+  // Parse the appointment date
+  let apptDate;
+  try {
+    apptDate = appt.scheduled_at.includes('T') ? parseISO(appt.scheduled_at) : parseISO(appt.scheduled_at.replace(' ', 'T'));
+  } catch {
+    return false;
+  }
+  // Compare to now
+  return isBefore(apptDate, new Date());
 }
 
 function onDoctorChange() {
@@ -580,6 +641,9 @@ watch(
     try {
       const queueRes = await getQueues({ patientId });
       queueEntries.value = queueRes.data.data || [];
+      
+      // Check for expired queue entries and update them
+      await updateExpiredQueueEntries();
     } catch (e) {
       console.error('[Patient Dashboard] Error fetching queues:', e);
       queueEntries.value = [];
@@ -589,25 +653,6 @@ watch(
   },
   { immediate: true }
 );
-
-function statusClass(status) {
-  if (status === 'scheduled' || status === 'waiting') return 'badge badge-info'
-  if (status === 'completed' || status === 'called') return 'badge badge-success'
-  return 'badge'
-}
-
-function getEnhancedStatusClass(status) {
-  const baseClass = 'status-badge'
-  switch (status) {
-    case 'scheduled': return `${baseClass} scheduled`
-    case 'waiting': return `${baseClass} waiting`
-    case 'called': return `${baseClass} called`
-    case 'completed': return `${baseClass} completed`
-    case 'cancelled': return `${baseClass} cancelled`
-    default: return baseClass
-  }
-}
-
 function parseAvailabilityArray(availStr) {
   try {
     const arr = JSON.parse(availStr)
@@ -616,4 +661,75 @@ function parseAvailabilityArray(availStr) {
     return []
   }
 }
+computed(() => {
+  // Non-expired first, then expired, each group sorted by scheduled_at ascending
+  return [...appointments.value].sort((a, b) => {
+    const aExpired = isAppointmentExpired(a)
+    const bExpired = isAppointmentExpired(b)
+    if (aExpired && !bExpired) return 1
+    if (!aExpired && bExpired) return -1
+    // If both are same (expired or not), sort by scheduled_at
+    const aDate = a.scheduled_at.includes('T') ? parseISO(a.scheduled_at) : parseISO(a.scheduled_at.replace(' ', 'T'))
+    const bDate = b.scheduled_at.includes('T') ? parseISO(b.scheduled_at) : parseISO(b.scheduled_at.replace(' ', 'T'))
+    return aDate - bDate
+  })
+});
+function isQueueEntryExpired(entry) {
+  // Only mark as expired if not completed or cancelled
+  if (entry.status === 'completed' || entry.status === 'cancelled') return false;
+
+  // If queue entry is associated with an appointment, check if that appointment is expired
+  if (entry.appointment_id) {
+    const associatedAppointment = appointments.value.find(appt => appt.id === entry.appointment_id);
+    if (associatedAppointment) {
+      const expired = isAppointmentExpired(associatedAppointment);
+      console.debug(`[isQueueEntryExpired] Entry ${entry.id} uses appointment ${associatedAppointment.id}: expired=${expired}`);
+      return expired;
+    }
+  }
+
+  // Check if queue entry has a scheduled_at field
+  if (entry.scheduled_at) {
+    let entryDate;
+    try {
+      entryDate = entry.scheduled_at.includes('T') ? parseISO(entry.scheduled_at) : parseISO(entry.scheduled_at.replace(' ', 'T'));
+      const expired = isBefore(entryDate, new Date());
+      console.debug(`[isQueueEntryExpired] Entry ${entry.id} uses scheduled_at: expired=${expired}`);
+      return expired;
+    } catch {
+      // If scheduled_at parsing fails, continue to other checks
+    }
+  }
+
+  // Check if queue entry has a created_at field and is older than 1 day
+  if (entry.created_at) {
+    let createdDate;
+    try {
+      createdDate = entry.created_at.includes('T') ? parseISO(entry.created_at) : parseISO(entry.created_at.replace(' ', 'T'));
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      const expired = isBefore(createdDate, oneDayAgo);
+      console.debug(`[isQueueEntryExpired] Entry ${entry.id} uses created_at: expired=${expired}`);
+      return expired;
+    } catch {
+      // If created_at parsing fails, continue
+    }
+  }
+
+  console.debug(`[isQueueEntryExpired] Entry ${entry.id} not expired by any rule`);
+  return false;
+}
+computed(() => {
+  return [...queueEntries.value].sort((a, b) => {
+    const aExpired = isQueueEntryExpired(a)
+    const bExpired = isQueueEntryExpired(b)
+    if (aExpired && !bExpired) return 1
+    if (!aExpired && bExpired) return -1
+    // If both are same (expired or not), sort by scheduled_at
+    if (!a.scheduled_at || !b.scheduled_at) return 0;
+    const aDate = a.scheduled_at.includes('T') ? parseISO(a.scheduled_at) : parseISO(a.scheduled_at.replace(' ', 'T'))
+    const bDate = b.scheduled_at.includes('T') ? parseISO(b.scheduled_at) : parseISO(b.scheduled_at.replace(' ', 'T'))
+    return aDate - bDate
+  })
+});
 </script>

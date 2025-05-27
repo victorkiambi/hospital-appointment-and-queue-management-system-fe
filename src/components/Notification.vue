@@ -22,7 +22,7 @@ import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 const props = defineProps({
   type: { type: String, default: 'info' }, // success, error, info, warning
   message: { type: String, required: true },
-  duration: { type: Number, default: 3000 }
+  duration: { type: Number, default: 6000 }
 })
 const emit = defineEmits(['close'])
 const visible = ref(true)

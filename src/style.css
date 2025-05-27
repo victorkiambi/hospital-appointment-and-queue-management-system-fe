@@ -2,5 +2,6 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* Import custom table styles */
+/* Import custom styles */
 @import "./styles/tables.css";
+@import "./styles/modals.css";
