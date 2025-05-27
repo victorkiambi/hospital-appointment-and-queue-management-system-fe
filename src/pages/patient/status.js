@@ -13,6 +13,7 @@ export function getEnhancedStatusClass(status) {
     case 'called': return `${baseClass} called`
     case 'completed': return `${baseClass} completed`
     case 'cancelled': return `${baseClass} cancelled`
+    case 'expired': return `${baseClass} expired`
     default: return baseClass
   }
 } 

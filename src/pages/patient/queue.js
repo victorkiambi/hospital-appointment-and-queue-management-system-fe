@@ -1,3 +1,5 @@
+import { isAppointmentExpired } from './appointments.js';
+
 export function isQueueEntryExpired(entry, appointments) {
   if (entry.status === 'completed' || entry.status === 'cancelled') return false;
   if (entry.appointment_id) {
@@ -12,6 +14,7 @@ export function isQueueEntryExpired(entry, appointments) {
       entryDate = entry.scheduled_at.includes('T') ? new Date(entry.scheduled_at) : new Date(entry.scheduled_at.replace(' ', 'T'));
       return entryDate < new Date();
     } catch {
+      // Continue to next check
     }
   }
   if (entry.created_at) {
@@ -22,8 +25,8 @@ export function isQueueEntryExpired(entry, appointments) {
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
       return createdDate < oneDayAgo;
     } catch {
+      // Continue to next check
     }
   }
   return false;
 }
-import { isAppointmentExpired } from './appointments.js';

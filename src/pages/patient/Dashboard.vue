@@ -22,13 +22,13 @@
         :appointments="appointments"
       />
       <!-- Doctor Details Modal -->
-      <Modal :visible="!!selectedDoctor" title="Doctor Information" @close="closeDoctorModal">
-        <div v-if="selectedDoctor" class="doctor-info-modal">
+      <Modal :visible="!!selectedDoctorForModal" title="Doctor Information" @close="closeDoctorModal">
+        <div v-if="selectedDoctorForModal" class="doctor-info-modal">
           <!-- Basic Information Section -->
           <div class="doctor-info-section">
             <div class="doctor-info-item">
               <span class="doctor-info-label">Name</span>
-              <span class="doctor-info-value">{{ selectedDoctor.user?.name || 'Not provided' }}</span>
+              <span class="doctor-info-value">{{ selectedDoctorForModal.user?.name || 'Not provided' }}</span>
             </div>
             
             <div class="doctor-info-item">
@@ -37,13 +37,13 @@
                 <svg class="contact-info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                 </svg>
-                <span class="contact-info-value">{{ selectedDoctor.user?.email || 'Not provided' }}</span>
+                <span class="contact-info-value">{{ selectedDoctorForModal.user?.email || 'Not provided' }}</span>
               </div>
             </div>
             
             <div class="doctor-info-item">
               <span class="doctor-info-label">Specialization</span>
-              <span class="doctor-info-value">{{ selectedDoctor.specialization || 'General Practice' }}</span>
+              <span class="doctor-info-value">{{ selectedDoctorForModal.specialization || 'General Practice' }}</span>
             </div>
             
             <div class="doctor-info-item">
@@ -56,10 +56,10 @@
           <div class="doctor-info-availability">
             <div class="doctor-info-availability-title">Weekly Schedule</div>
             <div class="doctor-availability-list">
-              <div v-if="parsedAvailabilityArray.length === 0" class="doctor-availability-empty">
+              <div v-if="!selectedDoctorForModal?.availability" class="doctor-availability-empty">
                 No availability schedule set
               </div>
-              <div v-else v-for="(slot, idx) in parsedAvailabilityArray" :key="idx" class="doctor-availability-item">
+              <div v-else v-for="(slot, idx) in parseAvailabilityForModal(selectedDoctorForModal.availability)" :key="idx" class="doctor-availability-item">
                 <span class="doctor-availability-day">{{ slot.day }}</span>
                 <span class="doctor-availability-time">{{ slot.start }} - {{ slot.end }}</span>
               </div>
@@ -71,40 +71,122 @@
         </template>
       </Modal>
       <!-- Booking Modal -->
-      <Modal :visible="showBooking" title="Book Appointment" @close="closeBookingModal">
+      <Modal :visible="showBooking" title="Book Appointment" @close="closeBookingModal" size="large">
         <Notification v-if="bookingError" type="error" :message="bookingError" @close="bookingError = ''" />
         <Notification v-if="bookingSuccess" type="success" :message="bookingSuccess" @close="bookingSuccess = ''" />
-        <Select
-          v-model="selectedDoctorId"
-          label="Doctor"
-          :options="doctorOptions"
-          placeholder="Select a doctor"
-          @change="onDoctorChange"
-        />
-        <Select
-          v-if="availableDays.length"
-          v-model="selectedDate"
-          label="Date"
-          :options="dateOptions"
-          placeholder="Select a date"
-          @change="onDateChange"
-        />
-        <Select
-          v-if="availableSlots.length"
-          v-model="selectedSlot"
-          label="Time Slot"
-          :options="slotOptions"
-          placeholder="Select a time slot"
-        />
-        <!-- Show formatted date and time if both are selected -->
-        <div v-if="selectedDate && selectedSlot" class="my-4 p-3 bg-gray-50 rounded border flex flex-col gap-1">
-          <div><span class="font-semibold">Selected Date:</span> {{ formatDateTime(selectedDate, 'EEEE dd MMMM yyyy') }}</div>
-          <div><span class="font-semibold">Selected Time:</span> {{ formatDateTime(selectedDate + 'T' + selectedSlot, 'h:mm a') }}</div>
+        <div style="max-height: 70vh; overflow-y: auto;">
+          <div v-if="fetchingDoctors" class="flex items-center justify-center py-8">
+            <svg class="animate-spin h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            <span class="text-blue-600 font-medium">Loading doctors...</span>
+          </div>
+          <div v-else class="space-y-6">
+            <div>
+              <Select
+                v-model="selectedDoctorId"
+                label="Select Doctor"
+                :options="doctorOptions"
+                placeholder="Choose your preferred doctor"
+                @change="onDoctorChange"
+                :disabled="fetchingDoctors || !doctorsLoaded"
+              />
+              <div v-if="selectedDoctor" class="mt-3 p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ selectedDoctor.user?.name }}</h4>
+                    <p class="text-sm text-gray-600">{{ selectedDoctor.specialization }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ selectedDoctor.user?.email }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Step 2: Select Date -->
+            <div v-if="selectedDoctorId">
+              <DatePicker
+                v-model="selectedDate"
+                label="Select Appointment Date"
+                :available-dates="availableDays"
+                :min-date="new Date()"
+                @change="onDateChange"
+                :disabled="fetchingDoctors || !doctorsLoaded || availableDays.length === 0"
+              />
+              
+              <!-- Availability explanation -->
+              <div v-if="selectedDoctor && parsedAvailabilityArray.length > 0" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                  </svg>
+                  <div>
+                    <p class="text-sm font-medium text-blue-900">{{ selectedDoctor.user?.name }} is available on:</p>
+                    <div class="mt-1 flex flex-wrap gap-2">
+                      <span v-for="slot in parsedAvailabilityArray" :key="`${slot.day}-${slot.start}-${slot.end}`" 
+                            class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {{ slot.day }}s {{ slot.start }} - {{ slot.end }}
+                      </span>
+                    </div>
+                    <p class="text-xs text-blue-700 mt-2">Green dates on the calendar show available appointments.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Step 3: Select Time -->
+            <div v-if="selectedDate">
+              <TimeSlotPicker
+                v-model="selectedSlot"
+                label="Select Time Slot"
+                :available-slots="availableSlots"
+                @change="onTimeSlotChange"
+              />
+            </div>
+            
+            <!-- Booking Summary -->
+            <div v-if="selectedDoctorId && selectedDate && selectedSlot" class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <h3 class="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                </svg>
+                Appointment Summary
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <div class="text-xs text-blue-600 font-medium uppercase tracking-wide">Doctor</div>
+                  <div class="text-sm font-medium text-blue-900">{{ selectedDoctor?.user?.name }}</div>
+                  <div class="text-xs text-blue-700">{{ selectedDoctor?.specialization }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-blue-600 font-medium uppercase tracking-wide">Date</div>
+                  <div class="text-sm font-medium text-blue-900">{{ formatDateTime(selectedDate, 'EEEE, MMMM d, yyyy') }}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-blue-600 font-medium uppercase tracking-wide">Time</div>
+                  <div class="text-sm font-medium text-blue-900">{{ formatTime(selectedSlot) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <template #actions>
-          <Button variant="secondary" type="button" @click="closeBookingModal">Cancel</Button>
-          <Button variant="primary" type="button" :loading="bookingLoading" :disabled="!selectedDoctorId || !selectedDate || !selectedSlot || bookingLoading" @click="submitBooking">
-            Book
+          <Button variant="secondary" type="button" @click="closeBookingModal" :disabled="bookingLoading || fetchingDoctors">
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            type="button" 
+            :loading="bookingLoading" 
+            :disabled="!selectedDoctorId || !selectedDate || !selectedSlot || bookingLoading || bookingRequestInProgress || fetchingDoctors" 
+            @click="submitBooking"
+          >
+            {{ bookingLoading ? 'Booking...' : 'Confirm Appointment' }}
           </Button>
         </template>
       </Modal>
@@ -194,6 +276,8 @@ import { useQueueEvents } from '@/utils/useQueueEvents'
 import { formatDateTime } from '@/utils/format'
 import PatientAppointmentsTable from '@/components/PatientAppointmentsTable.vue'
 import PatientQueueTable from '@/components/PatientQueueTable.vue'
+import DatePicker from '@/components/DatePicker.vue'
+import TimeSlotPicker from '@/components/TimeSlotPicker.vue'
 
 const calledNotification = ref('')
 
@@ -209,7 +293,6 @@ const queueEntries = ref([])
 const loadingAppointments = ref(true)
 const loadingQueue = ref(true)
 const userStore = useUserStore()
-const selectedDoctor = ref(null)
 const showBooking = ref(false)
 const doctors = ref([])
 const selectedDoctorId = ref('')
@@ -221,6 +304,10 @@ const bookingLoading = ref(false)
 const bookingError = ref('')
 const bookingSuccess = ref('')
 
+// Add booking request tracking
+const bookingRequestInProgress = ref(false)
+const lastBookingAttempt = ref(0)
+
 // Cancel appointment state
 const appointmentToCancel = ref(null)
 const cancelLoading = ref(false)
@@ -231,40 +318,17 @@ const cancellingAppointments = ref(new Set())
 // Add flags to prevent duplicate calls
 const fetchingDoctors = ref(false)
 const fetchingAppointments = ref(false)
+const doctorsLoaded = computed(() => doctors.value.length > 0 && !fetchingDoctors.value)
 
 const patientInfo = computed(() => userStore.user)
 
-const appointmentColumns = [
-  { key: 'scheduled_at', label: 'Date' },
-  { key: 'time', label: 'Time' },
-  { key: 'doctor', label: 'Doctor' },
-  { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Action' }
-]
-const queueColumns = [
-  { key: 'doctor', label: 'Doctor' },
-  { key: 'specialization', label: 'Specialization' },
-  { key: 'position', label: 'Position' },
-  { key: 'status', label: 'Status' },
-  { key: 'availability', label: 'Availability' }
-]
 const doctorOptions = computed(() => doctors.value.map(doc => ({ value: doc.id, label: `${doc.user?.name} (${doc.specialization})` })))
-const dateOptions = computed(() => availableDays.value.map(day => ({ value: day, label: day })))
-const slotOptions = computed(() => availableSlots.value.map(slot => ({ value: slot, label: slot })))
-computed(() => {
-  if (!selectedDoctor.value?.availability) return {}
-  try {
-    return JSON.parse(selectedDoctor.value.availability)
-  } catch {
-    return {}
-  }
-});
-computed(() =>
-    appointments.value.map(appt => ({
-      ...appt,
-      time: appt.scheduled_at
-    }))
-);
+
+const selectedDoctor = computed(() => {
+  if (!selectedDoctorId.value) return null
+  return doctors.value.find(doc => doc.id === Number(selectedDoctorId.value))
+})
+
 const parsedAvailabilityArray = computed(() => {
   if (!selectedDoctor.value?.availability) return []
   try {
@@ -275,15 +339,48 @@ const parsedAvailabilityArray = computed(() => {
   }
 })
 
-function showDoctorModal(doctor) {
-  selectedDoctor.value = doctor
+function formatTime(timeString) {
+  if (!timeString) return ''
+  
+  try {
+    const [hours, minutes] = timeString.split(':')
+    const hour = parseInt(hours)
+    const minute = parseInt(minutes)
+    
+    const date = new Date()
+    date.setHours(hour, minute, 0, 0)
+    
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  } catch {
+    return timeString
+  }
 }
+
+function showDoctorModal(doctor) {
+  selectedDoctorForModal.value = doctor
+}
+
+// Add the modal doctor ref
+const selectedDoctorForModal = ref(null)
+
 function closeDoctorModal() {
-  selectedDoctor.value = null
+  selectedDoctorForModal.value = null
+}
+
+function parseAvailabilityForModal(availabilityString) {
+  try {
+    const arr = JSON.parse(availabilityString)
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
 }
 
 function openBookingModal() {
-  console.log('openBookingModal called');
   showBooking.value = true;
   bookingError.value = '';
   bookingSuccess.value = '';
@@ -292,14 +389,13 @@ function openBookingModal() {
   selectedSlot.value = '';
   availableDays.value = [];
   availableSlots.value = [];
-  
-  // Only fetch doctors if we don't have them already or if not currently fetching
-  if (doctors.value.length === 0 && !fetchingDoctors.value) {
-    fetchDoctors();
-  }
+  // Always fetch doctors when opening modal
+  fetchDoctors();
 }
 function closeBookingModal() {
-  showBooking.value = false
+  showBooking.value = false;
+  bookingRequestInProgress.value = false;
+  lastBookingAttempt.value = 0;
 }
 
 // Cancel appointment functions
@@ -337,14 +433,6 @@ function cancelAppointment(appointment, event) {
 function closeCancelModal() {
   appointmentToCancel.value = null;
   cancelError.value = '';
-}
-
-// Helper function to check if an appointment can be cancelled
-function canCancelAppointment(appointment) {
-  return (appointment.status === 'scheduled' || appointment.status === 'expired') && 
-         appointment.status !== 'completed' && 
-         appointment.status !== 'cancelled' && 
-         !cancellingAppointments.value.has(appointment.id);
 }
 
 async function fetchQueue(patientId) {
@@ -509,30 +597,49 @@ function onDoctorChange() {
   selectedDate.value = ''
   selectedSlot.value = ''
   availableSlots.value = []
-  const doc = doctors.value.find(d => d.id == selectedDoctorId.value)
-  if (!doc?.availability) {
+  const doc = doctors.value.find(d => d.id === Number(selectedDoctorId.value))
+  if (!doc) {
     availableDays.value = []
+    console.log('No doctor found for selectedDoctorId:', selectedDoctorId.value)
     return
   }
-  // Parse availability as array of objects
+  if (!doc.availability) {
+    availableDays.value = []
+    console.log('Selected doctor has no availability:', doc)
+    return
+  }
   let availArr = []
   try {
     availArr = JSON.parse(doc.availability)
   } catch {
     availArr = []
   }
-  // Get unique days from availability
-  const daysSet = new Set(availArr.map(a => a.day))
+  if (!Array.isArray(availArr) || availArr.length === 0) {
+    availableDays.value = []
+    console.log('Doctor availability array is empty or invalid:', availArr)
+    return
+  }
+  const availableDaysOfWeek = new Set(
+    availArr.map(a => a.day.toLowerCase())
+  )
   const today = new Date()
   const days = []
-  for (let i = 0; i < 14; i++) {
-    const d = addDays(today, i)
-    const weekday = format(d, 'EEEE')
-    if (daysSet.has(weekday)) {
-      days.push(format(d, 'yyyy-MM-dd'))
+  for (let i = 0; i < 90; i++) {
+    const currentDate = addDays(today, i)
+    const weekdayName = format(currentDate, 'EEEE').toLowerCase()
+    if (availableDaysOfWeek.has(weekdayName)) {
+      days.push(format(currentDate, 'yyyy-MM-dd'))
     }
   }
   availableDays.value = days
+  console.log('Doctor availability:', doc.availability)
+  console.log('Parsed availability array:', availArr)
+  console.log('Available days calculated:', days)
+}
+
+function onTimeSlotChange() {
+  // Additional logic when time slot changes if needed
+  console.log('Time slot selected:', selectedSlot.value)
 }
 
 function getTimeSlotsFromRanges(ranges) {
@@ -555,7 +662,7 @@ function getTimeSlotsFromRanges(ranges) {
 
 function onDateChange() {
   selectedSlot.value = ''
-  const doc = doctors.value.find(d => d.id == selectedDoctorId.value)
+  const doc = doctors.value.find(d => d.id === Number(selectedDoctorId.value))
   if (!doc?.availability || !selectedDate.value) {
     availableSlots.value = []
     return
@@ -566,57 +673,131 @@ function onDateChange() {
   } catch {
     availArr = []
   }
-  // Get weekday for selected date
-  const weekday = format(parseISO(selectedDate.value), 'EEEE')
-  // Get all ranges for this weekday
-  const ranges = availArr.filter(a => a.day === weekday).map(a => `${a.start}-${a.end}`)
+  if (!Array.isArray(availArr)) {
+    availableSlots.value = []
+    return
+  }
+  // Get weekday for selected date (case-insensitive)
+  const selectedDateObj = parseISO(selectedDate.value)
+  const weekdayName = format(selectedDateObj, 'EEEE').toLowerCase() // e.g., 'tuesday'
+  // Get all availability entries for this weekday (case-insensitive)
+  const dayAvailability = availArr.filter(a => 
+    a.day && a.day.toLowerCase() === weekdayName
+  )
+  console.log('Selected date:', selectedDate.value, 'Weekday:', weekdayName)
+  console.log('Day availability:', dayAvailability)
+  const ranges = dayAvailability.map(a => `${a.start}-${a.end}`)
+  console.log('Ranges:', ranges)
+  if (dayAvailability.length === 0) {
+    availableSlots.value = []
+    return
+  }
+  // Get all time ranges for this weekday
   availableSlots.value = getTimeSlotsFromRanges(ranges)
+  console.log('Generated time slots:', availableSlots.value)
 }
 
 async function submitBooking() {
-  bookingError.value = ''
-  bookingSuccess.value = ''
-  bookingLoading.value = true
+  const now = Date.now();
+  
+  // Debounce: prevent requests within 2 seconds of each other
+  if (now - lastBookingAttempt.value < 2000) {
+    console.log('Booking request too soon after previous attempt, ignoring');
+    return;
+  }
+  
+  // Prevent duplicate booking requests
+  if (bookingRequestInProgress.value || bookingLoading.value) {
+    console.log('Booking request already in progress, ignoring duplicate call');
+    return;
+  }
+
+  // Update last attempt timestamp
+  lastBookingAttempt.value = now;
+
+  // Validate required fields
+  if (!selectedDoctorId.value || !selectedDate.value || !selectedSlot.value) {
+    bookingError.value = 'Please select a doctor, date, and time slot.';
+    return;
+  }
+
+  bookingError.value = '';
+  bookingSuccess.value = '';
+  bookingLoading.value = true;
+  bookingRequestInProgress.value = true;
+
   try {
-    const doctorId = selectedDoctorId.value
-    let dateStr = selectedDate.value
-    let timeStr = selectedSlot.value
+    const doctorId = selectedDoctorId.value;
+    let dateStr = selectedDate.value;
+    let timeStr = selectedSlot.value;
+    
     // Trim values
-    dateStr = dateStr ? dateStr.trim() : ''
-    timeStr = timeStr ? timeStr.trim() : ''
+    dateStr = dateStr ? dateStr.trim() : '';
+    timeStr = timeStr ? timeStr.trim() : '';
+    
     // Native JS date construction and formatting
-    const [year, month, day] = dateStr.split('-').map(Number)
-    const [hour, minute] = timeStr.split(':').map(Number)
-    const date = new Date(year, month - 1, day, hour, minute, 0)
-    const pad = n => n.toString().padStart(2, '0')
-    const scheduled_at = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [hour, minute] = timeStr.split(':').map(Number);
+    const date = new Date(year, month - 1, day, hour, minute, 0);
+    const pad = n => n.toString().padStart(2, '0');
+    const scheduled_at = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    
     if (isNaN(date.getTime())) {
-      bookingError.value = 'Invalid date/time selected.'
-      bookingLoading.value = false
-      return
+      bookingError.value = 'Invalid date/time selected.';
+      return;
     }
-    await api.post('/appointments', {
+
+    console.log('Submitting booking request:', { doctorId, scheduled_at });
+
+    // Make the API call
+    const response = await api.post('/appointments', {
       doctor_id: doctorId,
       scheduled_at
-    })
-    bookingSuccess.value = 'Appointment booked successfully!'
-    // Refresh appointments and queue
-    const patientId = patientInfo.value?.patient?.id
+    });
+
+    console.log('Booking successful:', response.data);
+    bookingSuccess.value = 'Appointment booked successfully!';
+    
+    // Close the modal immediately to prevent further attempts
+    closeBookingModal();
+    
+    // Refresh data in the background
+    const patientId = patientInfo.value?.patient?.id;
     if (patientId) {
-      await fetchAppointments(patientId)
-      await fetchQueue(patientId)
+      // Don't await these calls to avoid blocking the UI
+      Promise.all([
+        fetchAppointments(patientId),
+        fetchQueue(patientId)
+      ]).catch(e => {
+        console.error('Error refreshing data after booking:', e);
+      });
     }
-    closeBookingModal()
   } catch (e) {
-    // Enhanced error handling for API error structure
-    let msg = e.response?.data?.message || 'Booking failed.'
-    if (e.response?.data?.errors) {
-      const errorList = Object.values(e.response.data.errors).flat()
-      msg += ' ' + errorList.join(' ')
+    console.error('Error booking appointment:', e);
+    
+    // Check for specific error types
+    if (e.response?.status === 409) {
+      bookingError.value = 'This time slot is no longer available. Please select a different time.';
+    } else if (e.response?.status === 422) {
+      // Handle validation errors
+      let msg = e.response?.data?.message || 'Booking failed due to validation errors.';
+      if (e.response?.data?.errors) {
+        const errorList = Object.values(e.response.data.errors).flat();
+        msg += ' ' + errorList.join(' ');
+      }
+      bookingError.value = msg;
+    } else {
+      // Generic error handling
+      let msg = e.response?.data?.message || 'Booking failed. Please try again.';
+      if (e.response?.data?.errors) {
+        const errorList = Object.values(e.response.data.errors).flat();
+        msg += ' ' + errorList.join(' ');
+      }
+      bookingError.value = msg;
     }
-    bookingError.value = msg
   } finally {
-    bookingLoading.value = false
+    bookingLoading.value = false;
+    bookingRequestInProgress.value = false;
   }
 }
 
@@ -653,27 +834,7 @@ watch(
   },
   { immediate: true }
 );
-function parseAvailabilityArray(availStr) {
-  try {
-    const arr = JSON.parse(availStr)
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
-computed(() => {
-  // Non-expired first, then expired, each group sorted by scheduled_at ascending
-  return [...appointments.value].sort((a, b) => {
-    const aExpired = isAppointmentExpired(a)
-    const bExpired = isAppointmentExpired(b)
-    if (aExpired && !bExpired) return 1
-    if (!aExpired && bExpired) return -1
-    // If both are same (expired or not), sort by scheduled_at
-    const aDate = a.scheduled_at.includes('T') ? parseISO(a.scheduled_at) : parseISO(a.scheduled_at.replace(' ', 'T'))
-    const bDate = b.scheduled_at.includes('T') ? parseISO(b.scheduled_at) : parseISO(b.scheduled_at.replace(' ', 'T'))
-    return aDate - bDate
-  })
-});
+
 function isQueueEntryExpired(entry) {
   // Only mark as expired if not completed or cancelled
   if (entry.status === 'completed' || entry.status === 'cancelled') return false;
@@ -719,17 +880,4 @@ function isQueueEntryExpired(entry) {
   console.debug(`[isQueueEntryExpired] Entry ${entry.id} not expired by any rule`);
   return false;
 }
-computed(() => {
-  return [...queueEntries.value].sort((a, b) => {
-    const aExpired = isQueueEntryExpired(a)
-    const bExpired = isQueueEntryExpired(b)
-    if (aExpired && !bExpired) return 1
-    if (!aExpired && bExpired) return -1
-    // If both are same (expired or not), sort by scheduled_at
-    if (!a.scheduled_at || !b.scheduled_at) return 0;
-    const aDate = a.scheduled_at.includes('T') ? parseISO(a.scheduled_at) : parseISO(a.scheduled_at.replace(' ', 'T'))
-    const bDate = b.scheduled_at.includes('T') ? parseISO(b.scheduled_at) : parseISO(b.scheduled_at.replace(' ', 'T'))
-    return aDate - bDate
-  })
-});
 </script>
