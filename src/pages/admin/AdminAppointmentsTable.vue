@@ -63,11 +63,12 @@
             <th>Doctor Availability</th>
             <th>Patient</th>
             <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading" class="loading-row">
-            <td colspan="6" class="py-12">
+            <td colspan="7" class="py-12">
               <div class="flex items-center justify-center gap-3 text-gray-500">
                 <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -78,7 +79,7 @@
             </td>
           </tr>
           <tr v-else-if="filteredAppointments.length === 0" class="empty-row">
-            <td colspan="6" class="py-12">
+            <td colspan="7" class="py-12">
               <div class="flex flex-col items-center justify-center gap-2 text-gray-400">
                 <svg v-if="!hasActiveFilters" class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6m-6 0l.5-3h5l.5 3" />
@@ -138,6 +139,11 @@
               <span :class="getEnhancedStatusClass(appt.status)">
                 {{ appt.status }}
               </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+              <Button size="sm" variant="secondary" @click="showPatientModal(appt.patient)">
+                Details
+              </Button>
             </td>
           </tr>
         </tbody>

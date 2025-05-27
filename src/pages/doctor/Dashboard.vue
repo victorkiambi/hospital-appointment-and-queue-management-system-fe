@@ -155,9 +155,6 @@
                 </td>
                 <td class="table-actions">
                   <div>
-                    <Button size="sm" variant="secondary" @click="showPatientModal(entry.patient)">
-                      Details
-                    </Button>
                     <Button
                       size="sm"
                       variant="primary"
@@ -179,19 +176,39 @@
           </table>
         </div>
       </Card>
-      <!-- Patient Details Modal -->
-      <Modal :visible="!!selectedPatient" title="Patient Details" @close="closePatientModal">
-        <div v-if="selectedPatient">
-          <p><span class="font-bold">Name:</span> {{ selectedPatient.user?.name || '-' }}</p>
-          <p><span class="font-bold">Email:</span> {{ selectedPatient.user?.email || '-' }}</p>
-          <p><span class="font-bold">Medical Record #:</span> {{ selectedPatient.medical_record_number || '-' }}</p>
-          <p><span class="font-bold">User ID:</span> {{ selectedPatient.user_id || '-' }}</p>
-          <p><span class="font-bold">Patient ID:</span> {{ selectedPatient.id || '-' }}</p>
-          <p><span class="font-bold">Created At:</span> {{ formatDateTime(selectedPatient.created_at, 'PPpp') }}</p>
-          <p><span class="font-bold">Updated At:</span> {{ formatDateTime(selectedPatient.updated_at, 'PPpp') }}</p>
+      <!-- Patient Details Modal - Simplified -->
+      <Modal :visible="!!selectedPatient" title="Patient Information" @close="closePatientModal">
+        <div v-if="selectedPatient" class="patient-modal-simple">
+          <!-- Patient Header -->
+          <div class="patient-header-simple">
+            <div class="patient-avatar-simple">
+              {{ getPatientInitials(selectedPatient.user?.name) }}
+            </div>
+            <div class="patient-info-simple">
+              <h3 class="patient-name-simple">{{ selectedPatient.user?.name || 'Unknown Patient' }}</h3>
+              <p class="patient-email-simple">{{ selectedPatient.user?.email || 'No email provided' }}</p>
+            </div>
+          </div>
+
+          <!-- Patient Details -->
+          <div class="patient-details-simple">
+            <div class="detail-row">
+              <span class="detail-label-simple">Medical Record Number</span>
+              <span class="detail-value-simple">{{ selectedPatient.medical_record_number || 'Not assigned' }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label-simple">Patient ID</span>
+              <span class="detail-value-simple">{{ selectedPatient.id }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label-simple">Account Created</span>
+              <span class="detail-value-simple">{{ formatDateTime(selectedPatient.created_at, 'PP') }}</span>
+            </div>
+          </div>
         </div>
+        
         <template #actions>
-          <Button @click="closePatientModal">Close</Button>
+          <Button variant="secondary" @click="closePatientModal">Close</Button>
         </template>
       </Modal>
       <!-- Call Patient Success/Error Notifications -->
@@ -493,6 +510,15 @@ function getEnhancedStatusClass(status) {
     case 'expired': return `${baseClass} cancelled` // Use same styling as cancelled
     default: return baseClass
   }
+}
+
+function getPatientInitials(name) {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .map(n => n.charAt(0).toUpperCase())
+    .join('')
+    .slice(0, 2)
 }
 
 function capitalize(str) {
@@ -821,5 +847,46 @@ watchEffect(() => {
 
 .status-badge.expired {
   @apply bg-gray-100 text-gray-800;
+}
+
+/* Simplified Patient Modal Styles */
+.patient-modal-simple {
+  @apply space-y-6;
+}
+
+.patient-header-simple {
+  @apply flex items-center gap-4 pb-4 border-b border-gray-200;
+}
+
+.patient-avatar-simple {
+  @apply w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm;
+}
+
+.patient-info-simple {
+  @apply flex-1;
+}
+
+.patient-name-simple {
+  @apply text-lg font-semibold text-gray-900 mb-1;
+}
+
+.patient-email-simple {
+  @apply text-sm text-gray-600;
+}
+
+.patient-details-simple {
+  @apply space-y-4;
+}
+
+.detail-row {
+  @apply flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0;
+}
+
+.detail-label-simple {
+  @apply text-sm font-medium text-gray-600;
+}
+
+.detail-value-simple {
+  @apply text-sm text-gray-900 font-medium;
 }
 </style>
