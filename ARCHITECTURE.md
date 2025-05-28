@@ -86,5 +86,3 @@ MedBook Frontend is a modern, role-based Single Page Application (SPA) for medic
 - Integrate additional APIs or services by expanding the `services/` directory.
 
 ---
-
-For more details, see the [technical implementation doc](./technical_implementation_doc.md) or the [user guide](./USER_GUIDE.md). 

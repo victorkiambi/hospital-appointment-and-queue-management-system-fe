@@ -229,8 +229,3 @@ MIT
 
 ---
 
-**For more technical details, see [`technical_implementation_doc.md`](./technical_implementation_doc.md).**
-
----
-
-**If you need a more detailed user guide or API documentation, let me know!**

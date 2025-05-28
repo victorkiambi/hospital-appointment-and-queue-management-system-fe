@@ -13,7 +13,6 @@ Welcome to MedBook! This guide will help you get started and make the most of th
 - [Doctor Guide](#doctor-guide)
 - [Patient Guide](#patient-guide)
 - [Notifications](#notifications)
-- [Troubleshooting](#troubleshooting)
 - [Test Credentials](#test-credentials)
 
 ---
@@ -107,17 +106,6 @@ MedBook is a real-time medical queue and appointment management system. It provi
 
 ---
 
-## Troubleshooting
-- **Cannot login?**
-  - Check your credentials or reset your password.
-- **Not seeing real-time updates?**
-  - Ensure your internet connection is stable.
-  - Contact support if the problem persists.
-- **Role access issues?**
-  - Contact your administrator to verify your assigned role.
-
----
-
 ## Test Credentials
 
 Use the following test accounts to log in as different roles:
@@ -141,10 +129,3 @@ Use the following test accounts to log in as different roles:
 - **Email:** chris.black@example.com / **Password:** password
 
 ---
-
-## Screenshots
-> _Add screenshots here for each major feature/section for a visual guide._
-
----
-
-For further help, contact your system administrator or support team. 
