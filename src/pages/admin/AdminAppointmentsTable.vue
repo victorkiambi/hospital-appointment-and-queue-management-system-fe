@@ -1,376 +1,381 @@
+@@ -0,0 +1,380 @@
 <template>
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-card-body">
-        <!-- Header -->
-        <div class="auth-header">
-          <h1 class="auth-title">Create Account</h1>
-          <p class="auth-subtitle">Join us today and get started</p>
+  <Card title="Appointments">
+    <!-- Search and Filter Bar -->
+    <div class="appointments-search-bar flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-4 w-full">
+        <div class="relative flex-shrink-0 w-full md:w-72">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search appointments..."
+            class="appointments-search-field pl-10 h-10 w-full rounded border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          />
         </div>
-
-        <!-- Alerts -->
-        <div v-if="error" class="auth-alert-error">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-          </svg>
-          {{ error }}
-        </div>
-        
-        <div v-if="success" class="auth-alert-success">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-          </svg>
-          {{ success }}
-        </div>
-        
-        <div v-if="localError" class="auth-alert-error">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-          </svg>
-          {{ localError }}
-        </div>
-
-        <!-- Registration Form -->
-        <form @submit.prevent="onSubmit" class="auth-form">
-          <!-- Full Name -->
-          <div class="form-group">
-            <label class="form-label" for="name">
-              <span class="form-label-text">Full Name</span>
-              <span class="text-red-500">*</span>
-            </label>
-            <div class="input-with-icon">
-              <svg class="input-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
-              <input 
-                v-model="name" 
-                id="name" 
-                type="text" 
-                required 
-                class="form-input" 
-                placeholder="Enter your full name"
-                :class="{ 'input-error': nameError }"
-                @blur="validateName"
-              />
-            </div>
-            <div v-if="nameError" class="text-red-500 text-xs mt-1">{{ nameError }}</div>
-          </div>
-
-          <!-- Email -->
-          <div class="form-group">
-            <label class="form-label" for="email">
-              <span class="form-label-text">Email Address</span>
-              <span class="text-red-500">*</span>
-            </label>
-            <div class="input-with-icon">
-              <svg class="input-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
-              </svg>
-              <input 
-                v-model="email" 
-                id="email" 
-                type="email" 
-                required 
-                class="form-input" 
-                placeholder="Enter your email address"
-                :class="{ 'input-error': emailError }"
-                @blur="validateEmail"
-              />
-            </div>
-            <div v-if="emailError" class="text-red-500 text-xs mt-1">{{ emailError }}</div>
-          </div>
-
-          <!-- Password -->
-          <div class="form-group">
-            <label class="form-label" for="password">
-              <span class="form-label-text">Password</span>
-              <span class="text-red-500">*</span>
-            </label>
-            <div class="input-with-icon">
-              <svg class="input-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-              </svg>
-              <input 
-                v-model="password" 
-                id="password" 
-                :type="showPassword ? 'text' : 'password'" 
-                required 
-                class="form-input pr-12" 
-                placeholder="Create a strong password"
-                @input="checkPasswordStrength"
-                @blur="validatePassword"
-              />
-              <button 
-                type="button" 
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                @click="showPassword = !showPassword"
-              >
-                <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.697 6.697m7.425 7.425l3.18 3.18m-3.18-3.18L6.697 6.697m0 0L3 3"></path>
-                </svg>
-                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-              </button>
-            </div>
-            
-            <!-- Password Strength Indicator -->
-            <div v-if="password" class="password-strength">
-              <div class="strength-bar">
-                <div class="strength-fill" :class="passwordStrengthClass"></div>
-              </div>
-              <p class="strength-text" :class="passwordStrengthColor">
-                Password strength: {{ passwordStrengthText }}
-              </p>
-            </div>
-            
-            <div v-if="passwordError" class="text-red-500 text-xs mt-1">{{ passwordError }}</div>
-          </div>
-
-          <!-- Confirm Password -->
-          <div class="form-group">
-            <label class="form-label" for="passwordConfirm">
-              <span class="form-label-text">Confirm Password</span>
-              <span class="text-red-500">*</span>
-            </label>
-            <div class="input-with-icon">
-              <svg class="input-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <input 
-                v-model="passwordConfirm" 
-                id="passwordConfirm" 
-                :type="showConfirmPassword ? 'text' : 'password'" 
-                required 
-                class="form-input pr-12" 
-                placeholder="Confirm your password"
-                :class="{ 'input-error': confirmPasswordError }"
-                @blur="validateConfirmPassword"
-              />
-              <button 
-                type="button" 
-                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                @click="showConfirmPassword = !showConfirmPassword"
-              >
-                <svg v-if="showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.697 6.697m7.425 7.425l3.18 3.18m-3.18-3.18L6.697 6.697m0 0L3 3"></path>
-                </svg>
-                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-              </button>
-            </div>
-            <div v-if="confirmPasswordError" class="text-red-500 text-xs mt-1">{{ confirmPasswordError }}</div>
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" :disabled="loading || !isFormValid" class="auth-button">
-            <span v-if="loading" class="flex items-center justify-center">
-              <div class="loading-spinner mr-2"></div>
-              Creating Account...
-            </span>
-            <span v-else class="flex items-center justify-center">
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-              </svg>
-              Create Account
-            </span>
-          </button>
-        </form>
-
-        <!-- Footer -->
-        <div class="auth-footer">
-          <router-link to="/login" class="auth-link">
-            Already have an account? Sign in
-          </router-link>
+        <div class="flex gap-2 w-full md:w-auto">
+          <Select
+            v-model="statusFilter"
+            :options="statusOptions"
+            placeholder="All Status"
+            class="appointments-filter-select h-10 min-w-[120px]"
+          />
+          <Select
+            v-model="doctorFilter"
+            :options="doctorOptions"
+            placeholder="All Doctors"
+            class="appointments-filter-select h-10 min-w-[120px]"
+          />
+          <Select
+            v-model="dateFilter"
+            :options="dateFilterOptions"
+            placeholder="All Dates"
+            class="appointments-filter-select h-10 min-w-[120px]"
+          />
         </div>
       </div>
+      <div class="appointments-actions flex items-center">
+        <span 
+          v-if="hasActiveFilters"
+          @click="clearAllFilters"
+          class="appointments-clear-filters cursor-pointer text-blue-600 hover:text-blue-800 text-sm ml-2"
+        >
+          Clear filters
+        </span>
+      </div>
     </div>
-  </div>
+
+    <!-- Filter Summary -->
+    <div v-if="!loading" class="appointments-filter-summary">
+      <p class="text-sm text-gray-600">{{ filterSummary }}</p>
+    </div>
+    <div class="appointments-table-container">
+      <table class="appointments-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Doctor</th>
+            <th>Doctor Availability</th>
+            <th>Patient</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="loading" class="loading-row">
+            <td colspan="6" class="py-12">
+              <div class="flex items-center justify-center gap-3 text-gray-500">
+                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                <span class="text-sm font-medium">Loading appointments...</span>
+              </div>
+            </td>
+          </tr>
+          <tr v-else-if="filteredAppointments.length === 0" class="empty-row">
+            <td colspan="6" class="py-12">
+              <div class="flex flex-col items-center justify-center gap-2 text-gray-400">
+                <svg v-if="!hasActiveFilters" class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10a2 2 0 002 2h4a2 2 0 002-2V11m-6 0h6m-6 0l.5-3h5l.5 3" />
+                </svg>
+                <svg v-else class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <p v-if="!hasActiveFilters" class="text-sm font-medium">No appointments found</p>
+                <p v-else class="text-sm font-medium">No appointments match your filters</p>
+                <p v-if="!hasActiveFilters" class="text-xs text-gray-400">System appointments will appear here</p>
+                <p v-else class="text-xs text-gray-400">Try adjusting your search or filters</p>
+                <button
+                  v-if="hasActiveFilters"
+                  @click="clearAllFilters"
+                  class="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-else v-for="appt in filteredAppointments" :key="appt.id">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              {{ formatDateTime(appt.scheduled_at, 'dd MMM yyyy') }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+              {{ formatDateTime(appt.scheduled_at, 'HH:mm') }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">
+                {{ appt.doctor?.user?.name || '-' }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ appt.doctor?.specialization || '' }}
+              </div>
+            </td>
+            <td>
+              <div class="flex flex-wrap gap-1">
+                <span v-if="parseAvailability(appt.doctor?.availability).length === 0" class="text-xs text-gray-400 italic">
+                  No schedule set
+                </span>
+                <span v-else v-for="(slot, idx) in parseAvailability(appt.doctor?.availability)" :key="idx"
+                      class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  {{ slot.day }} {{ slot.start }}-{{ slot.end }}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">
+                {{ appt.patient?.user?.name || '-' }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ appt.patient?.user?.email || '' }}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span :class="getEnhancedStatusClass(appt.status)">
+                {{ appt.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-if="meta.last_page > 1" class="flex justify-center mt-4 gap-2">
+      <Button size="sm" :disabled="page === 1" @click="$emit('page-change', page - 1)">Prev</Button>
+      <Button
+        v-for="p in meta.last_page"
+        :key="p"
+        size="sm"
+        :variant="p === page ? 'primary' : 'secondary'"
+        @click="$emit('page-change', p)"
+      >{{ p }}</Button>
+      <Button size="sm" :disabled="page === meta.last_page" @click="$emit('page-change', page + 1)">Next</Button>
+    </div>
+  </Card>
 </template>
 
 <script setup>
+import Card from '@/components/Card.vue'
+import Button from '@/components/Button.vue'
+import Select from '@/components/Select.vue'
+import { formatDateTime } from '@/utils/format.js'
 import { ref, computed } from 'vue'
-import { useUserStore } from '../../store/user'
-import { useRouter } from 'vue-router'
 
-// Form data
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const passwordConfirm = ref('')
-
-// UI state
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
-const localError = ref('')
-
-// Validation errors
-const nameError = ref('')
-const emailError = ref('')
-const passwordError = ref('')
-const confirmPasswordError = ref('')
-
-// Password strength
-const passwordStrength = ref(0)
-
-// Store and router
-const userStore = useUserStore()
-const router = useRouter()
-
-// Computed properties
-const loading = computed(() => userStore.loading)
-const error = computed(() => userStore.error)
-const success = computed(() => userStore.success)
-
-const passwordStrengthText = computed(() => {
-  const strength = passwordStrength.value
-  if (strength < 2) return 'Weak'
-  if (strength < 3) return 'Fair'
-  if (strength < 4) return 'Good'
-  return 'Strong'
+const props = defineProps({
+  appointments: { type: Array, required: true },
+  loading: { type: Boolean, default: false },
+  meta: { type: Object, required: true },
+  page: { type: Number, required: true }
 })
 
-const passwordStrengthClass = computed(() => {
-  const strength = passwordStrength.value
-  if (strength < 2) return 'strength-weak'
-  if (strength < 3) return 'strength-fair'
-  if (strength < 4) return 'strength-good'
-  return 'strength-strong'
+// Search and Filter State
+const searchQuery = ref('')
+const statusFilter = ref('')
+const doctorFilter = ref('')
+const dateFilter = ref('')
+
+// Filter Options
+const statusOptions = [
+  { value: '', label: 'All Status' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'waiting', label: 'Waiting' },
+  { value: 'called', label: 'Called' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' }
+]
+
+const dateFilterOptions = [
+  { value: '', label: 'All Dates' },
+  { value: 'today', label: 'Today' },
+  { value: 'tomorrow', label: 'Tomorrow' },
+  { value: 'this_week', label: 'This Week' },
+  { value: 'next_week', label: 'Next Week' },
+  { value: 'this_month', label: 'This Month' }
+]
+
+// Dynamic Doctor Options
+const doctorOptions = computed(() => {
+  const doctors = props.appointments
+    .map(appt => appt.doctor)
+    .filter(doctor => doctor && doctor.user)
+    .reduce((unique, doctor) => {
+      if (!unique.find(d => d.id === doctor.id)) {
+        unique.push(doctor)
+      }
+      return unique
+    }, [])
+  
+  return [
+    { value: '', label: 'All Doctors' },
+    ...doctors.map(doctor => ({
+      value: doctor.id.toString(),
+      label: doctor.user.name
+    }))
+  ]
 })
 
-const passwordStrengthColor = computed(() => {
-  const strength = passwordStrength.value
-  if (strength < 2) return 'text-red-500'
-  if (strength < 3) return 'text-yellow-500'
-  if (strength < 4) return 'text-blue-500'
-  return 'text-green-500'
+// Computed Properties
+const hasActiveFilters = computed(() => {
+  return searchQuery.value || statusFilter.value || doctorFilter.value || dateFilter.value
 })
 
-const isFormValid = computed(() => {
-  return name.value.trim() && 
-         email.value.trim() && 
-         password.value && 
-         passwordConfirm.value &&
-         !nameError.value && 
-         !emailError.value && 
-         !passwordError.value && 
-         !confirmPasswordError.value
+// Main filtering logic
+const filteredAppointments = computed(() => {
+  let filtered = [...props.appointments]
+  
+  // Text search - searches across multiple fields
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(appt => {
+      const doctorName = appt.doctor?.user?.name?.toLowerCase() || ''
+      const patientName = appt.patient?.user?.name?.toLowerCase() || ''
+      const patientEmail = appt.patient?.user?.email?.toLowerCase() || ''
+      const specialization = appt.doctor?.specialization?.toLowerCase() || ''
+      const status = appt.status?.toLowerCase() || ''
+      const date = formatDateTime(appt.scheduled_at, 'dd MMM yyyy').toLowerCase()
+      const time = formatDateTime(appt.scheduled_at, 'HH:mm')
+      
+      return doctorName.includes(query) ||
+             patientName.includes(query) ||
+             patientEmail.includes(query) ||
+             specialization.includes(query) ||
+             status.includes(query) ||
+             date.includes(query) ||
+             time.includes(query)
+    })
+  }
+  
+  // Status filter
+  if (statusFilter.value) {
+    filtered = filtered.filter(appt => appt.status === statusFilter.value)
+  }
+  
+  // Doctor filter
+  if (doctorFilter.value) {
+    filtered = filtered.filter(appt => appt.doctor?.id?.toString() === doctorFilter.value)
+  }
+  
+  // Date filter
+  if (dateFilter.value) {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    filtered = filtered.filter(appt => {
+      const dateParts = getDateParts(appt.scheduled_at)
+      if (!dateParts) return false
+      
+      const apptDay = dateParts.dayStart
+      
+      switch (dateFilter.value) {
+        case 'today':
+          return apptDay.getTime() === today.getTime()
+        
+        case 'tomorrow':
+          const tomorrow = new Date(today)
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          return apptDay.getTime() === tomorrow.getTime()
+        
+        case 'this_week':
+          const thisWeek = getWeekBoundaries(today)
+          return dateParts.date >= thisWeek.start && dateParts.date <= thisWeek.end
+        
+        case 'next_week':
+          const nextWeek = getWeekBoundaries(today, 1)
+          return dateParts.date >= nextWeek.start && dateParts.date <= nextWeek.end
+        
+        case 'this_month':
+          return dateParts.date.getMonth() === now.getMonth() && 
+                 dateParts.date.getFullYear() === now.getFullYear()
+        
+        default:
+          return true
+      }
+    })
+  }
+  
+  return filtered
 })
 
-// Validation functions
-const validateName = () => {
-  nameError.value = ''
-  if (!name.value.trim()) {
-    nameError.value = 'Name is required'
-  } else if (name.value.trim().length < 2) {
-    nameError.value = 'Name must be at least 2 characters'
+// Results summary
+const filterSummary = computed(() => {
+  const total = props.appointments.length
+  const filtered = filteredAppointments.value.length
+  
+  if (!hasActiveFilters.value) {
+    return `Showing all ${total} appointments`
   }
+  
+  if (filtered === 0) {
+    return 'No appointments match your filters'
+  }
+  
+  return `Showing ${filtered} of ${total} appointments`
+})
+
+// Filter Functions
+function clearAllFilters() {
+  searchQuery.value = ''
+  statusFilter.value = ''
+  doctorFilter.value = ''
+  dateFilter.value = ''
 }
 
-const validateEmail = () => {
-  emailError.value = ''
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!email.value.trim()) {
-    emailError.value = 'Email is required'
-  } else if (!emailRegex.test(email.value)) {
-    emailError.value = 'Please enter a valid email address'
-  }
-}
-
-const validatePassword = () => {
-  passwordError.value = ''
-  if (!password.value) {
-    passwordError.value = 'Password is required'
-  } else if (password.value.length < 8) {
-    passwordError.value = 'Password must be at least 8 characters'
-  }
-  
-  // Revalidate confirm password if it exists
-  if (passwordConfirm.value) {
-    validateConfirmPassword()
-  }
-}
-
-const validateConfirmPassword = () => {
-  confirmPasswordError.value = ''
-  if (!passwordConfirm.value) {
-    confirmPasswordError.value = 'Please confirm your password'
-  } else if (password.value !== passwordConfirm.value) {
-    confirmPasswordError.value = 'Passwords do not match'
-  }
-}
-
-// Password strength checker
-const checkPasswordStrength = () => {
-  let strength = 0
-  const pwd = password.value
-  
-  // Length check
-  if (pwd.length >= 8) strength++
-  
-  // Uppercase check
-  if (/[A-Z]/.test(pwd)) strength++
-  
-  // Lowercase check
-  if (/[a-z]/.test(pwd)) strength++
-  
-  // Number check
-  if (/\d/.test(pwd)) strength++
-  
-  // Special character check
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) strength++
-  
-  passwordStrength.value = strength
-}
-
-// Form submission
-const onSubmit = async () => {
-  // Clear previous errors
-  localError.value = ''
-  nameError.value = ''
-  emailError.value = ''
-  passwordError.value = ''
-  confirmPasswordError.value = ''
-  
-  // Validate all fields
-  validateName()
-  validateEmail()
-  validatePassword()
-  validateConfirmPassword()
-  
-  // Check if passwords match
-  if (password.value !== passwordConfirm.value) {
-    localError.value = 'Passwords do not match'
-    return
-  }
-  
-  // Check if form is valid
-  if (!isFormValid.value) {
-    localError.value = 'Please fix the errors above'
-    return
-  }
-  
+// Helper function to safely get date parts
+function getDateParts(dateString) {
   try {
-    await userStore.register(name.value, email.value, password.value, passwordConfirm.value)
-    
-    // Clear form on success
-    name.value = ''
-    email.value = ''
-    password.value = ''
-    passwordConfirm.value = ''
-    localError.value = ''
-    
-    // Redirect to login after success
-    setTimeout(() => {
-      router.push('/login')
-    }, 2000)
-    
-  } catch (err) {
-    // Error is handled in the store
-    console.error('Registration error:', err)
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return null
+    return {
+      date,
+      dayStart: new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    }
+  } catch {
+    return null
   }
 }
-</script>
+
+// Helper function to get week boundaries
+function getWeekBoundaries(referenceDate, weekOffset = 0) {
+  const date = new Date(referenceDate)
+  date.setDate(date.getDate() + (weekOffset * 7))
+  
+  const startOfWeek = new Date(date)
+  startOfWeek.setDate(date.getDate() - date.getDay())
+  startOfWeek.setHours(0, 0, 0, 0)
+  
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(startOfWeek.getDate() + 6)
+  endOfWeek.setHours(23, 59, 59, 999)
+  
+  return { start: startOfWeek, end: endOfWeek }
+}
+
+function parseAvailability(avail) {
+  if (Array.isArray(avail)) return avail
+  if (typeof avail === 'string') {
+    try {
+      const arr = JSON.parse(avail)
+      return Array.isArray(arr) ? arr : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+function getEnhancedStatusClass(status) {
+  const baseClass = 'status-badge'
+  switch (status) {
+    case 'scheduled': return `${baseClass} scheduled`
+    case 'waiting': return `${baseClass} waiting`
+    case 'called': return `${baseClass} called`
+    case 'completed': return `${baseClass} completed`
+    case 'cancelled': return `${baseClass} cancelled`
+    default: return baseClass
+  }
+}
+</script> 

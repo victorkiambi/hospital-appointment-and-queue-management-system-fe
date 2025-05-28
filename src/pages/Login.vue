@@ -1,19 +1,18 @@
 <template>
   <div class="auth-container">
+    <Notification
+      v-if="showNotification && error"
+      type="error"
+      :message="error"
+      :duration="5000"
+      @close="showNotification = false"
+    />
     <div class="auth-card">
       <div class="auth-card-body">
         <!-- Header -->
         <div class="auth-header">
           <h1 class="auth-title">Welcome Back</h1>
           <p class="auth-subtitle">Sign in to your account</p>
-        </div>
-
-        <!-- Alert -->
-        <div v-if="error" class="auth-alert-error">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-          </svg>
-          {{ error }}
         </div>
 
         <!-- Login Form -->
@@ -114,9 +113,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useUserStore } from '../store/user'
 import { useRouter } from 'vue-router'
+import Notification from '@/components/Notification.vue'
 
 // Form data
 const email = ref('')
@@ -125,6 +125,7 @@ const rememberMe = ref(false)
 
 // UI state
 const showPassword = ref(false)
+const showNotification = ref(false)
 
 // Validation errors
 const emailError = ref('')
@@ -137,6 +138,12 @@ const router = useRouter()
 // Computed properties
 const loading = computed(() => userStore.loading)
 const error = computed(() => userStore.error)
+
+watch(error, (val) => {
+  if (val) {
+    showNotification.value = true
+  }
+})
 
 const isFormValid = computed(() => {
   return email.value.trim() && 
@@ -168,6 +175,7 @@ const onSubmit = async () => {
   // Clear previous errors
   emailError.value = ''
   passwordError.value = ''
+  showNotification.value = false
   
   // Validate fields
   validateEmail()
@@ -194,6 +202,7 @@ const onSubmit = async () => {
     }
   } catch (err) {
     // Error is handled in the store
+    showNotification.value = true
     console.error('Login error:', err)
   }
 }
