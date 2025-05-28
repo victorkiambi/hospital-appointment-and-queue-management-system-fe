@@ -20,8 +20,8 @@ export async function login(email, password) {
   return api.post('/login', { email, password })
 }
 
-export async function register(name, email, password) {
-  return api.post('/register', { name, email, password })
+export async function register(name, email, password, passwordConfirmation, role = 'patient') {
+  return api.post('/register', { name, email, password, password_confirmation: passwordConfirmation, role })
 }
 
 export async function forgotPassword(email) {

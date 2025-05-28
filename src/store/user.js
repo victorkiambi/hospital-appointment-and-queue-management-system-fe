@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
-import api from '../services/api'
+import api, { register as apiRegister } from '../services/api'
 import { setToken, getToken, removeToken } from '../utils/token'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: null,
     ready: false,
+    loading: false,
+    error: '',
+    success: '',
   }),
   getters: {
     isAuthenticated: (state) => !!state.user,
@@ -48,6 +51,21 @@ export const useUserStore = defineStore('user', {
     },
     setUser(user) {
       this.user = user
-    }
+    },
+    async register(name, email, password, passwordConfirm) {
+      this.loading = true
+      this.error = ''
+      this.success = ''
+      try {
+        const response = await apiRegister(name, email, password, passwordConfirm, 'patient')
+        this.success = 'Registration successful! You can now log in.'
+        return response
+      } catch (err) {
+        this.error = err.response?.data?.message || err.message || 'Registration failed.'
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
   }
 }) 

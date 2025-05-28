@@ -114,7 +114,7 @@
                 v-model="selectedDate"
                 label="Select Appointment Date"
                 :available-dates="availableDays"
-                :min-date="new Date()"
+                :min-date="startOfToday"
                 @change="onDateChange"
                 :disabled="fetchingDoctors || !doctorsLoaded || availableDays.length === 0"
               />
@@ -267,7 +267,7 @@ import PatientLayout from '../../layouts/PatientLayout.vue'
 import { useUserStore } from '../../store/user'
 import { getAppointments, getQueues } from '../../services/api'
 import api from '../../services/api'
-import { addDays, format, parseISO, isBefore } from 'date-fns'
+import { addDays, format, parseISO, isBefore, startOfDay, isToday } from 'date-fns'
 import Button from '@/components/Button.vue'
 import Modal from '@/components/Modal.vue'
 import Notification from '@/components/Notification.vue'
@@ -677,6 +677,8 @@ function getTimeSlotsFromRanges(ranges) {
   return slots
 }
 
+const startOfToday = startOfDay(new Date())
+
 function onDateChange() {
   selectedSlot.value = ''
   const doc = doctors.value.find(d => d.id === Number(selectedDoctorId.value))
@@ -696,17 +698,23 @@ function onDateChange() {
   const dayAvailability = availArr.filter(a => 
     a.day && a.day.toLowerCase() === weekdayName
   )
-  console.log('Selected date:', selectedDate.value, 'Weekday:', weekdayName)
-  console.log('Day availability:', dayAvailability)
   const ranges = dayAvailability.map(a => `${a.start}-${a.end}`)
-  console.log('Ranges:', ranges)
   if (dayAvailability.length === 0) {
     availableSlots.value = []
     return
   }
   // Get all time ranges for this weekday
-  availableSlots.value = getTimeSlotsFromRanges(ranges)
-  console.log('Generated time slots:', availableSlots.value)
+  let slots = getTimeSlotsFromRanges(ranges)
+  // Filter out past slots if today
+  if (isToday(selectedDateObj)) {
+    const now = new Date()
+    slots = slots.filter(slot => {
+      const [hour, minute] = slot.split(':').map(Number)
+      const slotDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute)
+      return slotDate > now
+    })
+  }
+  availableSlots.value = slots
 }
 
 async function submitBooking() {
