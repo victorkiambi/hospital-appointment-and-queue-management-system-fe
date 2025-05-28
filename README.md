@@ -103,6 +103,9 @@ VITE_PUSHER_APP_CLUSTER=your-pusher-cluster
 
 You can access the live application here: [https://frontend-wandering-dust-3957.fly.dev/](https://frontend-wandering-dust-3957.fly.dev/)
 
+> **Note**: If the application doesn't load immediately, please refresh the page. This is a known issue with the Fly.io deployment platform.
+
+
 - **Login/Register**: `/login`, `/register`
 - **Admin Dashboard**: `/admin/dashboard`
 - **Doctor Dashboard**: `/doctor/dashboard`
