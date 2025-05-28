@@ -15,6 +15,10 @@ A modern, real-time medical queue and appointment management system built with *
 - [API Integration](#api-integration)
 - [Real-Time Events](#real-time-events)
 - [Testing](#testing)
+- [Docker](#docker)
+- [Deploying to Fly.io](#deploying-to-flyio)
+- [Continuous Deployment (GitHub Actions)](#continuous-deployment-github-actions)
+- [SPA Routing and nginx](#spa-routing-and-nginx)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -97,6 +101,8 @@ VITE_PUSHER_APP_CLUSTER=your-pusher-cluster
 
 ## Usage
 
+You can access the live application here: [https://frontend-wandering-dust-3957.fly.dev/](https://frontend-wandering-dust-3957.fly.dev/)
+
 - **Login/Register**: `/login`, `/register`
 - **Admin Dashboard**: `/admin/dashboard`
 - **Doctor Dashboard**: `/doctor/dashboard`
@@ -137,6 +143,63 @@ Real-time queue and appointment updates use **Laravel Echo** and **Pusher** (`sr
 - Subscribes to private channels for doctors and patients.
 - Handles events like `PatientCalled`, `QueueUpdated`, etc.
 - UI updates automatically on relevant events.
+
+---
+
+## Docker
+
+You can build and run the frontend locally using Docker:
+
+```bash
+# Build the Docker image
+docker build -t medbook-frontend .
+
+# Run the container (default: port 80)
+docker run -p 8080:80 medbook-frontend
+```
+
+This uses a multi-stage build to produce a minimal nginx image serving the production build from `/usr/share/nginx/html`.
+
+---
+
+## Deploying to Fly.io
+
+This project is ready to deploy on [Fly.io](https://fly.io/):
+
+
+1. **Install Fly CLI**:  
+   https://fly.io/docs/hands-on/install-flyctl/
+
+2. **Authenticate**:  
+   ```bash
+   fly auth login
+   ```
+
+3. **Deploy**:  
+   ```bash
+   fly deploy
+   ```
+
+The deployment is configured via [`fly.toml`](./fly.toml).  
+The default configuration serves the app on port 80 and uses HTTPS.
+
+---
+
+## Continuous Deployment (GitHub Actions)
+
+Deployments to Fly.io are automated via GitHub Actions:
+
+- Workflow: [`.github/workflows/fly-deploy.yml`](.github/workflows/fly-deploy.yml)
+- On every push to `main`, the workflow builds and deploys the app to Fly.io.
+- Requires `FLY_API_TOKEN` to be set in your repository secrets.
+
+For more details, see [Fly.io GitHub Actions guide](https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/).
+
+---
+
+## SPA Routing and nginx
+
+This app is a single-page application (SPA). The Docker/nginx setup is configured to serve `index.html` for all routes, ensuring client-side routing works correctly (see Dockerfile for details).
 
 ---
 

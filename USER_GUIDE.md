@@ -24,7 +24,7 @@ MedBook is a real-time medical queue and appointment management system. It provi
 ---
 
 ## Getting Started
-1. **Open the application** in your browser (URL provided by your administrator).
+1. **Open the application** in your browser: [https://frontend-wandering-dust-3957.fly.dev/](https://frontend-wandering-dust-3957.fly.dev/)
 2. **Register** for a new account or **login** if you already have one.
 3. Your dashboard and available features depend on your assigned role.
 
