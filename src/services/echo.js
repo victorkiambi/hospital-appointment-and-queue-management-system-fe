@@ -10,9 +10,7 @@ const echo = new Echo({
   cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
   forceTLS: true,
   authEndpoint: import.meta.env.VITE_API_BASE_URL + '/broadcasting/auth',
-  // Remove withCredentials for token-based auth
   withCredentials: false,
-  // Add authorization header for token-based auth
   auth: {
     headers: {
       Authorization: () => {

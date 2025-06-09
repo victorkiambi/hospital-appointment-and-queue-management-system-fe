@@ -3,7 +3,6 @@ import { getToken } from '../utils/token'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + '/api/v1',
-  // Removed withCredentials for token-based auth
 })
 
 // Add Authorization header if token is present
@@ -16,7 +15,6 @@ api.interceptors.request.use(config => {
 });
 
 export async function login(email, password) {
-  // No CSRF needed for token-based auth
   return api.post('/login', { email, password })
 }
 
@@ -64,7 +62,5 @@ export async function callPatient(queueId) {
     called_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
   });
 }
-
-// You can add register, logout, etc. here as needed
 
 export default api 
