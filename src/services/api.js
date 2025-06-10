@@ -26,12 +26,16 @@ export async function forgotPassword(email) {
   return api.post('/forgot-password', { email })
 }
 
-export async function getAppointments({ doctorId, patientId, page = 1, perPage = 20 } = {}) {
+export async function getAppointments({ doctorId, patientId, page = 1, perPage = 20, search, status, scheduled_at_start, scheduled_at_end } = {}) {
   let query = [];
   if (doctorId) query.push(`doctor_id=${doctorId}`);
   if (patientId) query.push(`patient_id=${patientId}`);
   if (page) query.push(`page=${page}`);
   if (perPage) query.push(`per_page=${perPage}`);
+  if (search) query.push(`search=${encodeURIComponent(search)}`);
+  if (status) query.push(`status=${encodeURIComponent(status)}`);
+  if (scheduled_at_start) query.push(`scheduled_at_start=${encodeURIComponent(scheduled_at_start.toISOString())}`);
+  if (scheduled_at_end) query.push(`scheduled_at_end=${encodeURIComponent(scheduled_at_end.toISOString())}`);
   const queryString = query.length ? `?${query.join('&')}` : '';
   return api.get(`/appointments${queryString}`);
 }

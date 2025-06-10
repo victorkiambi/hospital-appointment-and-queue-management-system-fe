@@ -17,7 +17,7 @@
       />
       <!-- Queue Table -->
       <PatientQueueTable
-        :queue-entries="queueEntries"
+        :queue-entries="activeQueueEntries"
         :loading="loadingQueue"
         :appointments="appointments"
       />
@@ -278,6 +278,7 @@ import PatientAppointmentsTable from '@/pages/patient/PatientAppointmentsTable.v
 import PatientQueueTable from '@/pages/patient/PatientQueueTable.vue'
 import DatePicker from '@/components/DatePicker.vue'
 import TimeSlotPicker from '@/components/TimeSlotPicker.vue'
+import { useQueueStore } from '@/store/queue'
 
 const calledNotification = ref('')
 
@@ -296,7 +297,6 @@ useQueueEvents({
 })
 
 const appointments = ref([])
-const queueEntries = ref([])
 const loadingAppointments = ref(true)
 const loadingQueue = ref(true)
 const userStore = useUserStore()
@@ -328,6 +328,13 @@ const fetchingAppointments = ref(false)
 const doctorsLoaded = computed(() => doctors.value.length > 0 && !fetchingDoctors.value)
 
 const patientInfo = computed(() => userStore.user)
+
+const queueStore = useQueueStore()
+
+// Only show non-expired queue entries
+const activeQueueEntries = computed(() =>
+  queueStore.queue.filter(entry => !isQueueEntryExpired(entry))
+)
 
 const doctorOptions = computed(() => doctors.value.map(doc => ({ value: doc.id, label: `${doc.user?.name} (${doc.specialization})` })))
 
@@ -446,7 +453,7 @@ function closeCancelModal() {
 }
 
 function syncAppointmentsWithQueue() {
-  queueEntries.value.forEach(entry => {
+  queueStore.queue.forEach(entry => {
     if (entry.appointment_id && entry.status === 'called') {
       const idx = appointments.value.findIndex(a => a.id === entry.appointment_id);
       if (idx !== -1) {
@@ -460,14 +467,14 @@ async function fetchQueue(patientId) {
   loadingQueue.value = true;
   try {
     const queueRes = await getQueues({ patientId });
-    queueEntries.value = queueRes.data.data || [];
+    queueStore.queue = queueRes.data.data || [];
     // Check for expired queue entries and update them
     await updateExpiredQueueEntries();
     // Sync appointment statuses with queue
     syncAppointmentsWithQueue();
   } catch (e) {
     console.error('[Patient Dashboard] Error fetching queues:', e);
-    queueEntries.value = [];
+    queueStore.queue = [];
   } finally {
     loadingQueue.value = false;
   }
@@ -475,7 +482,7 @@ async function fetchQueue(patientId) {
 
 // Function to update expired queue entries
 async function updateExpiredQueueEntries() {
-  const expiredQueueEntries = queueEntries.value.filter(entry => 
+  const expiredQueueEntries = queueStore.queue.filter(entry => 
     (entry.status === 'waiting' || entry.status === 'scheduled') && isQueueEntryExpired(entry)
   );
 
@@ -487,9 +494,9 @@ async function updateExpiredQueueEntries() {
       });
       
       // Update the local queue entry status
-      const index = queueEntries.value.findIndex(q => q.id === entry.id);
+      const index = queueStore.queue.findIndex(q => q.id === entry.id);
       if (index !== -1) {
-        queueEntries.value[index].status = 'expired';
+        queueStore.queue[index].status = 'expired';
       }
     } catch (e) {
       console.error(`Error updating queue entry ${entry.id} to expired:`, e);
@@ -611,8 +618,8 @@ function isAppointmentExpired(appt) {
   } catch {
     return false;
   }
-  // Compare to now
-  return isBefore(apptDate, new Date());
+  // Compare to start of today (not now)
+  return isBefore(apptDate, startOfDay(new Date()));
 }
 
 function onDoctorChange() {
@@ -841,7 +848,7 @@ watch(
     // Fetch queue
     try {
       const queueRes = await getQueues({ patientId });
-      queueEntries.value = queueRes.data.data || [];
+      queueStore.queue = queueRes.data.data || [];
       
       // Check for expired queue entries and update them
       await updateExpiredQueueEntries();
@@ -849,7 +856,7 @@ watch(
       syncAppointmentsWithQueue();
     } catch (e) {
       console.error('[Patient Dashboard] Error fetching queues:', e);
-      queueEntries.value = [];
+      queueStore.queue = [];
     } finally {
       loadingQueue.value = false;
     }
@@ -876,7 +883,8 @@ function isQueueEntryExpired(entry) {
     let entryDate;
     try {
       entryDate = entry.scheduled_at.includes('T') ? parseISO(entry.scheduled_at) : parseISO(entry.scheduled_at.replace(' ', 'T'));
-      const expired = isBefore(entryDate, new Date());
+      // Compare to start of today (not now)
+      const expired = isBefore(entryDate, startOfDay(new Date()));
       console.debug(`[isQueueEntryExpired] Entry ${entry.id} uses scheduled_at: expired=${expired}`);
       return expired;
     } catch {
@@ -889,7 +897,7 @@ function isQueueEntryExpired(entry) {
     let createdDate;
     try {
       createdDate = entry.created_at.includes('T') ? parseISO(entry.created_at) : parseISO(entry.created_at.replace(' ', 'T'));
-      const oneDayAgo = new Date();
+      const oneDayAgo = startOfDay(new Date());
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
       const expired = isBefore(createdDate, oneDayAgo);
       console.debug(`[isQueueEntryExpired] Entry ${entry.id} uses created_at: expired=${expired}`);

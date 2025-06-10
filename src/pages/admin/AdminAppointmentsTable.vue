@@ -163,7 +163,8 @@ import Card from '@/components/Card.vue'
 import Button from '@/components/Button.vue'
 import Select from '@/components/Select.vue'
 import { formatDateTime } from '@/utils/format.js'
-import { ref, computed } from 'vue'
+import { ref, computed, watch, defineEmits } from 'vue'
+import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 
 const props = defineProps({
   appointments: { type: Array, required: true },
@@ -378,4 +379,38 @@ function getEnhancedStatusClass(status) {
     default: return baseClass
   }
 }
+
+function getDateRangeForFilter(filter) {
+  const now = new Date()
+  switch (filter) {
+    case 'today':
+      return { scheduled_at_start: startOfDay(now), scheduled_at_end: endOfDay(now) }
+    case 'tomorrow': {
+      const tomorrow = addDays(now, 1)
+      return { scheduled_at_start: startOfDay(tomorrow), scheduled_at_end: endOfDay(tomorrow) }
+    }
+    case 'this_week':
+      return { scheduled_at_start: startOfWeek(now), scheduled_at_end: endOfWeek(now) }
+    case 'next_week': {
+      const nextWeekStart = addDays(startOfWeek(now), 7)
+      const nextWeekEnd = addDays(endOfWeek(now), 7)
+      return { scheduled_at_start: nextWeekStart, scheduled_at_end: nextWeekEnd }
+    }
+    case 'this_month':
+      return { scheduled_at_start: startOfMonth(now), scheduled_at_end: endOfMonth(now) }
+    default:
+      return {}
+  }
+}
+
+// Watchers to emit filter changes
+watch([searchQuery, statusFilter, doctorFilter, dateFilter], ([search, status, doctor, date]) => {
+  let filterPayload = { search, status, doctor }
+  if (date) {
+    Object.assign(filterPayload, getDateRangeForFilter(date))
+  }
+  emit('filter-change', filterPayload)
+})
+
+const emit = defineEmits(['filter-change'])
 </script> 

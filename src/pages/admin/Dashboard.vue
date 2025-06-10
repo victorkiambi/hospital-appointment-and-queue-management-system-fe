@@ -18,6 +18,7 @@
         :meta="appointmentsMeta"
         :page="appointmentsPage"
         @page-change="goToAppointmentsPage"
+        @filter-change="handleAppointmentsFilterChange"
       />
     </div>
   </AdminLayout>
@@ -39,6 +40,7 @@ const appointmentsPage = ref(1)
 const loadingStats = ref(true)
 const loadingUsers = ref(true)
 const loadingAppointments = ref(true)
+const appointmentsFilters = ref({ search: '', status: '', doctor: '', date: '' })
 
 const roleOptions = [
   { value: '', label: 'All Roles' },
@@ -69,10 +71,17 @@ onMounted(async () => {
   await fetchAppointments()
 })
 
-async function fetchAppointments(page = 1) {
+async function fetchAppointments(page = 1, filters = appointmentsFilters.value) {
   try {
     loadingAppointments.value = true
-    const res = await getAppointments({ page })
+    const res = await getAppointments({ 
+      page,
+      search: filters.search,
+      status: filters.status,
+      doctorId: filters.doctor,
+      scheduled_at_start: filters.scheduled_at_start,
+      scheduled_at_end: filters.scheduled_at_end
+    })
     appointments.value = res.data.data || []
     appointmentsMeta.value = res.data.meta || { total: 0, per_page: 20, current_page: 1, last_page: 1 }
     appointmentsPage.value = appointmentsMeta.value.current_page
@@ -86,7 +95,12 @@ async function fetchAppointments(page = 1) {
 
 function goToAppointmentsPage(page) {
   if (page < 1 || page > appointmentsMeta.value.last_page) return
-  fetchAppointments(page)
+  fetchAppointments(page, appointmentsFilters.value)
+}
+
+function handleAppointmentsFilterChange(filters) {
+  appointmentsFilters.value = { ...filters }
+  fetchAppointments(1, appointmentsFilters.value)
 }
 
 async function refreshUsers() {

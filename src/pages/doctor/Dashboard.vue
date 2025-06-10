@@ -44,7 +44,7 @@
                   </div>
                 </td>
               </tr>
-              <tr v-else v-for="appt in appointments" :key="appt.id">
+              <tr v-else v-for="appt in filteredAppointments" :key="appt.id">
                 <td>
                   <div class="table-cell-primary">
                     {{ formatDateTime(appt.scheduled_at, 'dd MMM yyyy') }}
@@ -372,6 +372,7 @@ import Notification from '@/components/Notification.vue'
 import TextInput from '@/components/TextInput.vue'
 import { useQueueEvents } from '@/utils/useQueueEvents'
 import { formatDateTime } from '@/utils/format'
+import { isAfter, parseISO } from 'date-fns'
 
 useQueueEvents()
 
@@ -740,6 +741,23 @@ async function handleCallPatient(queueEntry) {
     }
   }
 }
+
+// Only show appointments that are now or in the future
+const filteredAppointments = computed(() => {
+  const now = new Date();
+  return appointments.value.filter(appt => {
+    if (!appt.scheduled_at) return false;
+    // Support both ISO and 'YYYY-MM-DD HH:mm:ss' formats
+    const iso = appt.scheduled_at.includes('T') ? appt.scheduled_at : appt.scheduled_at.replace(' ', 'T');
+    try {
+      const apptDate = parseISO(iso);
+      // Show if appointment is now or in the future
+      return isAfter(apptDate, now) || apptDate.getTime() === now.getTime();
+    } catch {
+      return false;
+    }
+  });
+});
 
 watchEffect(() => {
   if (userStore.ready && !userStore.user) {
